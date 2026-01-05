@@ -48,6 +48,24 @@ from src.api.schemas import (
     SuccessResponse,
 )
 from src.core.dspy_client import configure_dspy, get_model_info, test_ollama_connection
+from src.core.error_handlers import (
+    CircuitBreakerOpenError,
+    CircuitState,
+    GenerationTimeoutError,
+    MaxRetriesExceededError,
+    OllamaUnavailableError,
+    check_ollama_health,
+    create_circuit_breaker_open_error,
+    create_generation_failed_error,
+    create_generation_timeout_error,
+    create_service_unavailable_error,
+    create_validation_error,
+    generate_with_fallback,
+    get_circuit_breaker,
+    handle_ollama_error,
+    retry_with_exponential_backoff,
+    timeout_wrapper,
+)
 from src.core.models import CourseStructure, LearningObjective
 from src.modules.assessor import Assessor
 from src.modules.architect import Architect
@@ -99,19 +117,33 @@ async def health_check():
     Check API and Ollama connection status.
 
     Returns:
-        Health status including Ollama connectivity and model information
+        Health status including Ollama connectivity, model information, and circuit breaker state
     """
     try:
         # Test Ollama connection
         ollama_status = test_ollama_connection()
         ollama_connected = ollama_status["status"] == "ok"
 
+        # Check Ollama health
+        ollama_healthy = check_ollama_health()
+
         # Get model info
         model_info = get_model_info()
 
+        # Get circuit breaker status
+        circuit_breaker = get_circuit_breaker()
+
+        # Determine overall health status
+        if not ollama_connected or not ollama_healthy:
+            health_status = "degraded"
+        elif circuit_breaker.state != CircuitState.CLOSED:
+            health_status = "degraded"
+        else:
+            health_status = "healthy"
+
         return HealthResponse(
-            status="healthy" if ollama_connected else "degraded",
-            ollama_connected=ollama_connected,
+            status=health_status,
+            ollama_connected=ollama_connected and ollama_healthy,
             model_version=model_info.get("model"),
             version="1.0.0",
             uptime_seconds=time.time() - _start_time,
@@ -164,24 +196,35 @@ async def generate_objectives(request: Request, body: GenerateObjectivesRequest)
             configure_dspy()
         except Exception as e:
             logger.error(f"[{request_id}] Failed to configure DSPy: {e}")
+            error_detail = create_service_unavailable_error(
+                service="Ollama",
+                cached_content_available=False,
+            )
+            error_detail.details["error"] = str(e)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={
-                    "code": "SERVICE_UNAVAILABLE",
-                    "message": "Failed to configure LLM connection",
-                    "details": {"error": str(e)},
-                },
+                detail=error_detail.to_dict(),
             )
 
         # Initialize Architect module
         architect = Architect()
 
-        # Generate objectives
-        try:
-            course_structure: CourseStructure = architect.generate_objectives(
+        # Define generation function with timeout and retry
+        @timeout_wrapper(timeout_seconds=60)
+        @retry_with_exponential_backoff(max_attempts=3, base_delay=1.0)
+        def _generate_with_timeout_and_retry():
+            """Generate objectives with timeout and retry logic."""
+            return architect.generate_objectives(
                 topic=body.topic,
                 target_audience=body.target_audience,
                 num_objectives=body.num_objectives,
+            )
+
+        # Generate objectives with circuit breaker protection
+        try:
+            course_structure: CourseStructure = generate_with_fallback(
+                _generate_with_timeout_and_retry,
+                cache_key=f"objectives:{body.topic}:{body.target_audience}:{body.num_objectives}",
             )
 
             # Store objectives in the objective store for quiz generation later
@@ -191,6 +234,50 @@ async def generate_objectives(request: Request, body: GenerateObjectivesRequest)
             logger.info(
                 f"[{request_id}] Successfully generated {len(course_structure.objectives)} objectives",
                 extra={"request_id": request_id, "objective_count": len(course_structure.objectives)}
+            )
+
+        except CircuitBreakerOpenError as e:
+            logger.error(f"[{request_id}] Circuit breaker open: {e}")
+            error_detail = create_circuit_breaker_open_error(
+                remaining_timeout=get_circuit_breaker()._get_remaining_timeout()
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=error_detail.to_dict(),
+            )
+
+        except OllamaUnavailableError as e:
+            logger.error(f"[{request_id}] Ollama unavailable: {e}")
+            error_detail = create_service_unavailable_error(
+                service="Ollama",
+                cached_content_available=False,
+            )
+            error_detail.details["error"] = str(e)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=error_detail.to_dict(),
+            )
+
+        except GenerationTimeoutError as e:
+            logger.error(f"[{request_id}] Generation timeout: {e}")
+            error_detail = create_generation_timeout_error(
+                timeout_seconds=60,
+                suggestion="Try a simpler topic or ensure Ollama has enough resources",
+            )
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail=error_detail.to_dict(),
+            )
+
+        except MaxRetriesExceededError as e:
+            logger.error(f"[{request_id}] Max retries exceeded: {e}")
+            error_detail = create_generation_failed_error(
+                attempts=3,
+                errors=[str(e)],
+            )
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=error_detail.to_dict(),
             )
 
         except ValueError as e:
@@ -345,41 +432,70 @@ async def generate_quiz(request: Request, body: GenerateQuizRequest):
         # Initialize Assessor module
         assessor = Assessor()
 
-        # Generate quiz with timeout handling
-        import concurrent.futures
+        # Define generation function with timeout and retry
+        @timeout_wrapper(timeout_seconds=60)
+        @retry_with_exponential_backoff(max_attempts=3, base_delay=1.0)
+        def _generate_quiz_with_timeout_and_retry():
+            """Generate quiz with timeout and retry logic."""
+            return assessor.generate_quiz(
+                objective=objective,
+                context=None,  # Could be extended to include course context
+            )
 
+        # Generate quiz with circuit breaker protection
         try:
-            # Use ThreadPoolExecutor to enforce timeout
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    assessor.generate_quiz,
-                    objective=objective,
-                    context=None,  # Could be extended to include course context
-                )
+            quiz_question = generate_with_fallback(
+                _generate_quiz_with_timeout_and_retry,
+                cache_key=f"quiz:{body.objective_id}",
+            )
 
-                try:
-                    # Wait for completion with 30 second timeout
-                    quiz_question = future.result(timeout=30)
+        except CircuitBreakerOpenError as e:
+            logger.error(f"[{request_id}] Circuit breaker open: {e}")
+            error_detail = create_circuit_breaker_open_error(
+                remaining_timeout=get_circuit_breaker()._get_remaining_timeout()
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=error_detail.to_dict(),
+            )
 
-                except concurrent.futures.TimeoutError:
-                    # Cancel the future if it's still running
-                    future.cancel()
-                    raise TimeoutError("Quiz generation exceeded 30 second timeout")
+        except OllamaUnavailableError as e:
+            logger.error(f"[{request_id}] Ollama unavailable: {e}")
+            error_detail = create_service_unavailable_error(
+                service="Ollama",
+                cached_content_available=False,
+            )
+            error_detail.details["error"] = str(e)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=error_detail.to_dict(),
+            )
 
-        except TimeoutError as e:
+        except GenerationTimeoutError as e:
             logger.error(f"[{request_id}] Quiz generation timeout: {e}")
+            error_detail = create_generation_timeout_error(
+                timeout_seconds=60,
+                suggestion="The LLM took too long to respond. Try again or consider using a faster model",
+            )
+            error_detail.details["objective_id"] = body.objective_id
             raise HTTPException(
                 status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-                detail={
-                    "code": "GENERATION_TIMEOUT",
-                    "message": "Quiz generation exceeded 30 second timeout",
-                    "details": {
-                        "objective_id": body.objective_id,
-                        "timeout_seconds": 30,
-                        "suggestion": "The LLM took too long to respond. Try again or consider using a faster model"
-                    },
-                },
+                detail=error_detail.to_dict(),
             )
+
+        except MaxRetriesExceededError as e:
+            logger.error(f"[{request_id}] Max retries exceeded: {e}")
+            error_detail = create_generation_failed_error(
+                attempts=3,
+                errors=[str(e)],
+            )
+            error_detail.details["objective_id"] = body.objective_id
+            error_detail.details["objective_text"] = f"{objective.verb} {objective.content}"
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=error_detail.to_dict(),
+            )
+
         except ValueError as e:
             logger.error(f"[{request_id}] Quiz generation failed: {e}")
             raise HTTPException(
