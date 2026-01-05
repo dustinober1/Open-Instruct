@@ -3,7 +3,8 @@
  * Export all API services for easy importing
  */
 
-export * from './api';
+// Ollama service for direct LLM integration
+export { ollamaService, default as ollama } from './ollama';
 
-// Export API client for advanced configurations
+// Export API client for any remaining backend API needs
 export { apiClient, ApiError } from './api';

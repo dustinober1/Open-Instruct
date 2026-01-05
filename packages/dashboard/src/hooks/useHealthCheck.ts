@@ -1,36 +1,51 @@
 /**
  * Custom hook for health check operations
+ * Checks Ollama connection status
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { healthCheck, ApiError } from '../services/api';
-import type { HealthResponse } from '../types';
+import { ollamaService } from '../services/ollama';
+
+export interface HealthResponse {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  ollamaConnected: boolean;
+  ollamaModel?: string;
+  timestamp: string;
+}
 
 interface UseHealthCheckResult {
   data: HealthResponse | null;
   loading: boolean;
-  error: ApiError | null;
+  error: Error | null;
   refetch: () => Promise<void>;
 }
 
 export const useHealthCheck = (): UseHealthCheckResult => {
   const [data, setData] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ApiError | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchHealth = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await healthCheck();
-      setData(result);
+      const result = await ollamaService.checkConnection();
+      
+      setData({
+        status: result.connected ? 'healthy' : 'unhealthy',
+        ollamaConnected: result.connected,
+        ollamaModel: result.model,
+        timestamp: new Date().toISOString(),
+      });
     } catch (err) {
-      setError(err instanceof ApiError ? err : new ApiError(
-        'Failed to check health',
-        'HEALTH_CHECK_FAILED',
-        0
-      ));
+      const error = err instanceof Error ? err : new Error('Failed to check health');
+      setError(error);
+      setData({
+        status: 'unhealthy',
+        ollamaConnected: false,
+        timestamp: new Date().toISOString(),
+      });
     } finally {
       setLoading(false);
     }
@@ -39,7 +54,7 @@ export const useHealthCheck = (): UseHealthCheckResult => {
   useEffect(() => {
     fetchHealth();
 
-    // Optional: Poll for health status every 30 seconds
+    // Poll for health status every 30 seconds
     const interval = setInterval(fetchHealth, 30000);
     return () => clearInterval(interval);
   }, [fetchHealth]);
