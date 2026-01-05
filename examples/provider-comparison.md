@@ -1,6 +1,6 @@
 # LLM Provider Comparison
 
-Choosing the right "brain" for your Open-Instruct engine is critical. Here is a breakdown of the three supported option.
+Choosing the right "brain" for your Open-Instruct engine is critical. Here is a breakdown of the three supported options.
 
 ## At a Glance
 
@@ -56,4 +56,5 @@ OPENAI_API_KEY="..."
 ```bash
 LLM_PROVIDER="ollama"
 # No API key needed
+OLLAMA_MODEL="deepseek-r1:1.5b"
 ```

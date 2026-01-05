@@ -106,13 +106,21 @@ backend/
 │   ├── e2e/                        # Full system tests
 │   │   ├── test_api_endpoints.py
 │   │   └── test_cli.py
-│   ├── golden_set.json             # Known good outputs
+│   ├── golden_set.json             # Golden prompts + invariant expectations
 │   └── benchmarks.py               # Performance tests
 ```
 
+### Golden Set (`tests/golden_set.json`)
+
+The golden set is a curated list of realistic generation inputs plus invariant expectations.
+
+- **Why**: LLM outputs are not deterministic, so strict text comparisons are brittle.
+- **How to use it**: Integration tests should assert invariants (schema validity, verb/level alignment, uniqueness, etc.), not exact strings.
+- **Optional**: `example_output` entries are for human review and can be updated intentionally when prompts change.
+
 ### pytest Configuration
 
-Create [`pytest.ini`](pytest.ini):
+Create [`backend/pytest.ini`](../backend/pytest.ini):
 ```ini
 [pytest]
 testpaths = tests
@@ -134,7 +142,7 @@ markers =
     slow: Tests that take > 10 seconds
 ```
 
-### Shared Fixtures ([`tests/conftest.py`](tests/conftest.py))
+### Shared Fixtures ([`backend/tests/conftest.py`](../backend/tests/conftest.py))
 
 ```python
 import pytest
@@ -188,7 +196,7 @@ def pytest_configure(config):
 
 **Goal**: Define the "contract" for all data structures before writing implementation code.
 
-### Test File: [`tests/unit/test_models.py`](tests/unit/test_models.py)
+### Test File: [`backend/tests/unit/test_models.py`](../backend/tests/unit/test_models.py)
 
 ```python
 import pytest
@@ -372,7 +380,7 @@ class TestQuizQuestion:
 
 ### Implementation Notes for Junior Developers
 
-After writing these tests (which will fail initially), implement [`src/core/models.py`](backend/src/core/models.py):
+After writing these tests (which will fail initially), implement [`backend/src/core/models.py`](../backend/src/core/models.py):
 
 ```python
 from enum import Enum
@@ -429,7 +437,7 @@ class QuizQuestion(BaseModel):
 
 **Goal**: Test DSPy prompt logic without calling Ollama (fast feedback).
 
-### Test File: [`tests/mocked/test_architect_mocked.py`](tests/mocked/test_architect_mocked.py)
+### Test File: [`backend/tests/mocked/test_architect_mocked.py`](../backend/tests/mocked/test_architect_mocked.py)
 
 ```python
 import pytest
@@ -544,7 +552,7 @@ This lets you write robust code **before** connecting to real LLM.
 
 **Goal**: Test dependency graph and topological sort algorithms (deterministic).
 
-### Test File: [`tests/unit/test_algorithms.py`](tests/unit/test_algorithms.py)
+### Test File: [`backend/tests/unit/test_algorithms.py`](../backend/tests/unit/test_algorithms.py)
 
 ```python
 import pytest
@@ -668,7 +676,7 @@ Junior developers: Implement these **before** integrating with LLM. Use these te
 2. You have 3-5 example outputs to base assertions on
 3. Mocked tests all pass
 
-### Test File: [`tests/integration/test_architect_integration.py`](tests/integration/test_architect_integration.py)
+### Test File: [`backend/tests/integration/test_architect_integration.py`](../backend/tests/integration/test_architect_integration.py)
 
 ```python
 import pytest
@@ -768,12 +776,12 @@ pytest tests/integration/test_architect_integration.py::TestArchitectIntegration
 
 **Goal**: Test full system from API → LLM → Database.
 
-### Test File: [`tests/e2e/test_api_endpoints.py`](tests/e2e/test_api_endpoints.py)
+### Test File: [`backend/tests/e2e/test_api_endpoints.py`](../backend/tests/e2e/test_api_endpoints.py)
 
 ```python
 import pytest
 from fastapi.testclient import TestClient
-from src.api import app
+from src.api.main import app
 
 @pytest.fixture
 def client():
@@ -801,10 +809,12 @@ class TestAPIEndpoints:
             "target_audience": "Backend developers"
         }
 
-        response = client.post("/generate/objectives", json=payload)
+        response = client.post("/api/v1/generate/objectives", json=payload)
 
         assert response.status_code == 200
-        data = response.json()
+        body = response.json()
+        assert body["success"] is True
+        data = body["data"]
 
         assert "topic" in data
         assert "objectives" in data
@@ -814,20 +824,20 @@ class TestAPIEndpoints:
         """Should generate quiz for specific objective."""
         # First, generate objectives
         objectives_response = client.post(
-            "/generate/objectives",
+            "/api/v1/generate/objectives",
             json={"topic": "Python decorators", "target_audience": "Developers"}
         )
-        objectives = objectives_response.json()["objectives"]
+        objectives = objectives_response.json()["data"]["objectives"]
         first_objective = objectives[0]
 
         # Generate quiz for first objective
         quiz_response = client.post(
-            "/generate/quiz",
-            json={"objective_id": first_objective["id"]}
+            "/api/v1/generate/quiz",
+            json={"objective_id": first_objective["id"], "difficulty": "medium"}
         )
 
         assert quiz_response.status_code == 200
-        quiz = quiz_response.json()
+        quiz = quiz_response.json()["data"]
 
         assert "stem" in quiz
         assert "correct_answer" in quiz
@@ -843,21 +853,21 @@ class TestAPIEndpoints:
 
         # First request (uncached)
         start1 = time.time()
-        response1 = client.post("/generate/objectives", json=payload)
+        response1 = client.post("/api/v1/generate/objectives", json=payload)
         duration1 = time.time() - start1
 
         # Second request (cached)
         start2 = time.time()
-        response2 = client.post("/generate/objectives", json=payload)
+        response2 = client.post("/api/v1/generate/objectives", json=payload)
         duration2 = time.time() - start2
 
         assert response1.status_code == 200
         assert response2.status_code == 200
+        assert response2.json()["data"]["cache_status"] == "hit"
         assert duration2 < duration1, "Cached request should be faster"
-        assert duration2 < 1.0, "Cached request should be < 1 second"
 
-        # Responses should be identical
-        assert response1.json() == response2.json()
+        # Cached data should match (meta/request IDs may differ)
+        assert response1.json()["data"]["objectives"] == response2.json()["data"]["objectives"]
 ```
 
 ---
@@ -873,7 +883,7 @@ class TestAPIEndpoints:
 | `src/modules/architect.py` | **90%+** | Core business logic |
 | `src/modules/assessor.py` | **90%+** | Quiz generation |
 | `src/modules/algorithms.py` | **95%+** | Pure Python, deterministic |
-| `src/api.py` | **70%+** | Endpoints covered by E2E tests |
+| `src/api/main.py` | **70%+** | Endpoints covered by E2E tests |
 
 ### Generating Coverage Reports
 
@@ -936,8 +946,8 @@ repos:
         language: system
         pass_filenames: false
 
-      - id: pytest-coverage
-        name: Check coverage
+      - id: pytest-cov
+        name: Check coverage (pytest-cov)
         entry: pytest --cov=src --cov-fail-under=75
         language: system
         pass_filenames: false

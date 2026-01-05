@@ -14,7 +14,7 @@ This guide walks you through setting up your development environment for the Ope
 ## 📋 Prerequisites
 
 Before starting, ensure you have:
-- ✅ **Python 3.9+** installed
+- ✅ **Python 3.10+** installed
 - ✅ **Git** installed and configured
 - ✅ **15-20 minutes** of uninterrupted time
 - ✅ **Stable internet connection**
@@ -36,6 +36,7 @@ ls -la
 ### Expected Output
 ```
 README.md
+backend/
 getting-started/
 documentation/
 examples/
@@ -49,7 +50,7 @@ resources/
 ### Create Backend Directory
 ```bash
 # Create the backend directory structure
-mkdir -p backend/src/{core,modules} tests logs data
+mkdir -p backend/src/{api,core,modules} backend/{tests,logs,data}
 
 # Verify the structure
 tree backend/  # Or use: find backend/ -type d
@@ -59,7 +60,8 @@ tree backend/  # Or use: find backend/ -type d
 ```
 backend/
 ├── src/
-│   ├── core/      # Core business logic
+│   ├── api/       # FastAPI app + routers
+│   ├── core/      # Config, DSPy client, Pydantic models
 │   └── modules/   # DSPy modules
 ├── tests/         # Test files
 ├── logs/          # Log files
@@ -205,6 +207,9 @@ deepseek-r1:1.5b        abc123  2.1 GB    2 hours ago
 cat > .env << 'EOF'
 # Open-Instruct Environment Configuration
 
+# Provider selection
+LLM_PROVIDER=ollama
+
 # Database
 DATABASE_URL=sqlite:///data/open_instruct.db
 
@@ -222,7 +227,7 @@ LOG_LEVEL=INFO
 LOG_FILE=logs/production.log
 
 # Caching
-CACHE_TTL=3600  # 1 hour
+CACHE_TTL=604800  # 7 days
 CACHE_SIZE=1000
 
 # LLM Configuration
@@ -435,6 +440,7 @@ python verify_setup.py
 ✅ tests: exists
 ✅ logs: exists
 ✅ data: exists
+✅ src/api: exists
 ✅ src/core: exists
 ✅ src/modules: exists
 ========================================
@@ -477,7 +483,7 @@ print(f'Version: {dspy.__version__}')
 #### Option 3: Start the API Server
 ```bash
 # Start the FastAPI development server
-uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
+uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 📋 Quick Reference
@@ -491,7 +497,7 @@ cd backend && source venv/bin/activate
 pytest tests/ -v
 
 # Start API server
-uvicorn src.api:app --reload
+uvicorn src.api.main:app --reload
 
 # Check Ollama
 ollama list

@@ -14,7 +14,7 @@ A hierarchical framework for categorizing educational goals. It organizes learni
 An incorrect option in a multiple-choice question. Good distractors are plausible but clearly wrong to someone who knows the material.
 
 ### **Endpoint**
-A specific URL in our API (e.g., `/generate/quiz`) that performs a specific function.
+A specific URL in our API (e.g., `/api/v1/generate/quiz`) that performs a specific function.
 
 ### **FastAPI**
 A modern, fast web framework for building APIs with Python 3.7+ based on standard Python type hints.

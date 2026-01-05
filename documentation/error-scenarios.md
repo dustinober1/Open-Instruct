@@ -897,17 +897,20 @@ sqlite3 backend/data/open_instruct.db "SELECT COUNT(*) FROM courses;"
 
 **Recovery Steps**:
 ```bash
+# Run from backend/ directory
+cd backend
+
 # 1. Check disk usage
 df -h
 
 # 2. Clean up old logs
-find backend/logs/ -name "*.log" -mtime +7 -delete
+find logs/ -name "*.log" -mtime +7 -delete
 
 # 3. Clean up old cache entries (via Python)
 python -c "from src.db import cleanup; cleanup.delete_expired_cache()"
 
 # 4. Vacuum database
-sqlite3 backend/data/open_instruct.db "VACUUM;"
+sqlite3 data/open_instruct.db "VACUUM;"
 ```
 
 ### Recovery 4: Memory Leak
@@ -921,8 +924,8 @@ pkill ollama
 ollama serve
 
 # 2. Restart application
-pkill -f "uvicorn src.api"
-uvicorn src.api:app
+pkill -f "uvicorn src.api.main"
+uvicorn src.api.main:app
 
 # 3. Monitor memory
 watch -n 5 'ps aux | grep ollama'

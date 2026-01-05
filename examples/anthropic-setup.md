@@ -40,6 +40,8 @@ Run the provider test:
 python src/scripts/test_provider.py --provider anthropic
 ```
 
+*(Note: If this script doesn't exist yet, you can test by running the main module and checking logs).*
+
 ## Cost Expectations
 - **Claude 3 Haiku**: Very affordable, similar to GPT-4o-mini.
 - **Claude 3.5 Sonnet**: Moderate cost, best balance of intelligence.

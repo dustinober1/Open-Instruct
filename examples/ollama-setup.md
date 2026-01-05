@@ -380,7 +380,7 @@ ollama list --format '{{.Name}} {{.Size}} {{.Modified}}'
    ```bash
    # Set environment variable
    export LLM_PROVIDER=ollama
-   export LLM_MODEL=deepseek-r1:1.5b
+   export OLLAMA_MODEL=deepseek-r1:1.5b
 
    # Test configuration
    python scripts/test_llm_connection.py
@@ -394,8 +394,8 @@ ollama list --format '{{.Name}} {{.Size}} {{.Modified}}'
 ### Switching Models
 ```bash
 # To switch models:
-export LLM_MODEL=mistral:7b  # or llama3:8b
-ollama pull $LLM_MODEL       # Ensure model is installed
+export OLLAMA_MODEL=mistral:7b  # or llama3:8b
+ollama pull $OLLAMA_MODEL       # Ensure model is installed
 
 # Test new model
 python scripts/test_model.py

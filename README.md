@@ -226,23 +226,23 @@ ollama pull deepseek-r1:1.5b
 
 ```
 Week 1: Planning & Setup
-├─ Day 1: Read Implementation_Plan.md
+├─ Day 1: Read documentation/implementation-plan.md
 │          Understand project scope & phases
-├─ Day 2: Read Blooms_Taxonomy_Specification.md
+├─ Day 2: Read documentation/blooms-taxonomy.md
 │          Understand core domain model
-├─ Day 3: Read TDD_Workflow.md
+├─ Day 3: Read documentation/tdd-workflow.md
 │          Understand development process
-└─ Day 4: Read Test_Plan.md
-           Understand testing requirements
+└─ Day 4: Read documentation/test-plan.md
+	           Understand testing requirements
 
 Week 2: Core Development
-├─ Day 1: Choose LLM Provider & Read DSPy_Prompt_Strategy.md
+├─ Day 1: Choose LLM Provider & Read documentation/dspy-prompt-strategy.md
 │          Learn LLM integration
-├─ Day 2: Read API_Contract.md
+├─ Day 2: Read documentation/api-contract.md
 │          Design REST endpoints
-├─ Day 3: Read Database_Schema_Design.md
+├─ Day 3: Read documentation/database-design.md
 │          Implement data layer
-└─ Day 4: Read Error_Scenarios.md
+└─ Day 4: Read documentation/error-scenarios.md
            Implement error handling
 
 Week 3: Multi-LLM Support & Configuration
@@ -263,7 +263,7 @@ Week 4+: Implementation & Refinement
 
 ## 🎯 Key Concepts by Document
 
-### Implementation_Plan.md
+### [implementation-plan.md](documentation/implementation-plan.md)
 
 **Core Concepts**:
 - 12 Development Phases
@@ -285,7 +285,7 @@ Week 4+: Implementation & Refinement
 
 ---
 
-### Test_Plan.md
+### [test-plan.md](documentation/test-plan.md)
 
 **Core Concepts**:
 - 5 Testing Phases (Unit → E2E)
@@ -307,7 +307,7 @@ Week 4+: Implementation & Refinement
 
 ---
 
-### TDD_Workflow.md
+### [tdd-workflow.md](documentation/tdd-workflow.md)
 
 **Core Concepts**:
 - Red-Green-Refactor Cycle
@@ -329,7 +329,7 @@ Week 4+: Implementation & Refinement
 
 ---
 
-### Blooms_Taxonomy_Specification.md
+### [blooms-taxonomy.md](documentation/blooms-taxonomy.md)
 
 **Core Concepts**:
 - 6 Cognitive Levels (Remember → Create)
@@ -351,7 +351,7 @@ Week 4+: Implementation & Refinement
 
 ---
 
-### DSPy_Prompt_Strategy.md
+### [dspy-prompt-strategy.md](documentation/dspy-prompt-strategy.md)
 
 **Core Concepts**:
 - DSPy Signatures & Modules
@@ -373,7 +373,7 @@ Week 4+: Implementation & Refinement
 
 ---
 
-### API_Contract.md
+### [api-contract.md](documentation/api-contract.md)
 
 **Core Concepts**:
 - RESTful endpoints (8 main endpoints)
@@ -395,7 +395,7 @@ Week 4+: Implementation & Refinement
 
 ---
 
-### Database_Schema_Design.md
+### [database-design.md](documentation/database-design.md)
 
 **Core Concepts**:
 - 5 Tables (courses, objectives, quizzes, cache, logs)
@@ -417,7 +417,7 @@ Week 4+: Implementation & Refinement
 
 ---
 
-### Error_Scenarios.md
+### [error-scenarios.md](documentation/error-scenarios.md)
 
 **Core Concepts**:
 - 4 Error Categories (Transient, Validation, System, LLM)
@@ -441,88 +441,88 @@ Week 4+: Implementation & Refinement
 
 ## 🚀 Quick Start Guide
 
-### Week 1: Environment Setup (Implementation_Plan.md Phase 1)
+### Week 1: Environment Setup (documentation/implementation-plan.md Phase 1)
 
 **Goals**:
-- ✅ Create project structure
-- ✅ Install dependencies (DSPy, Pydantic, FastAPI)
-- ✅ Set up Ollama with DeepSeek-R1 1.5B
-- ✅ Write "Hello World" test
+- [ ] Create project structure
+- [ ] Install dependencies (DSPy, Pydantic, FastAPI)
+- [ ] Set up Ollama with DeepSeek-R1 1.5B
+- [ ] Write "Hello World" test
 
 **Exit Criterion**: Can generate valid JSON from local LLM
 
-**Reference**: Implementation_Plan.md → Immediate Next Steps (Session 1)
+**Reference**: documentation/implementation-plan.md → Immediate Next Steps (Session 1)
 
 ---
 
-### Week 2: Core Models & Tests (Blooms_Taxonomy_Specification.md)
+### Week 2: Core Models & Tests (documentation/blooms-taxonomy.md)
 
 **Goals**:
-- ✅ Implement `BloomLevel` enum
-- ✅ Implement `LearningObjective` Pydantic model
-- ✅ Implement `CourseStructure` Pydantic model
-- ✅ Add 180 approved verbs
-- ✅ Write unit tests (Test-First!)
+- [ ] Implement `BloomLevel` enum
+- [ ] Implement `LearningObjective` Pydantic model
+- [ ] Implement `CourseStructure` Pydantic model
+- [ ] Add 180 approved verbs
+- [ ] Write unit tests (Test-First!)
 
 **Exit Criterion**: All Pydantic models pass validation tests
 
-**Reference**: Blooms_Taxonomy_Specification.md → Implementation Specification
+**Reference**: documentation/blooms-taxonomy.md → Implementation Specification
 
 ---
 
-### Week 3: DSPy Integration (DSPy_Prompt_Strategy.md)
+### Week 3: DSPy Integration (documentation/dspy-prompt-strategy.md)
 
 **Goals**:
-- ✅ Implement `Architect` module (objectives)
-- ✅ Implement `Assessor` module (quizzes)
-- ✅ Add verb validation assertions
-- ✅ Achieve 60%+ JSON validity rate
+- [ ] Implement `Architect` module (objectives)
+- [ ] Implement `Assessor` module (quizzes)
+- [ ] Add verb validation assertions
+- [ ] Achieve 60%+ JSON validity rate
 
 **Exit Criterion**: CLI generates valid course structure
 
-**Reference**: DSPy_Prompt_Strategy.md → Complete Prompt Templates
+**Reference**: documentation/dspy-prompt-strategy.md → Complete Prompt Templates
 
 ---
 
-### Week 4: REST API (API_Contract.md)
+### Week 4: REST API (documentation/api-contract.md)
 
 **Goals**:
-- ✅ Implement FastAPI endpoints
-- ✅ Add request/response validation
-- ✅ Implement caching layer
-- ✅ Add error handlers
+- [ ] Implement FastAPI endpoints
+- [ ] Add request/response validation
+- [ ] Implement caching layer
+- [ ] Add error handlers
 
 **Exit Criterion**: Can call API via Postman/curl
 
-**Reference**: API_Contract.md → Endpoints
+**Reference**: documentation/api-contract.md → Endpoints
 
 ---
 
-### Week 5: Database & Persistence (Database_Schema_Design.md)
+### Week 5: Database & Persistence (documentation/database-design.md)
 
 **Goals**:
-- ✅ Create SQLite database schema
-- ✅ Implement CRUD operations
-- ✅ Add caching by prompt hash
-- ✅ Set up automated backups
+- [ ] Create SQLite database schema
+- [ ] Implement CRUD operations
+- [ ] Add caching by prompt hash
+- [ ] Set up automated backups
 
 **Exit Criterion**: Can save and retrieve courses
 
-**Reference**: Database_Schema_Design.md → Queries
+**Reference**: documentation/database-design.md → Queries
 
 ---
 
-### Week 6: Error Handling & Polish (Error_Scenarios.md)
+### Week 6: Error Handling & Polish (documentation/error-scenarios.md)
 
 **Goals**:
-- ✅ Add retry logic with exponential backoff
-- ✅ Implement circuit breaker pattern
-- ✅ Add structured logging
-- ✅ Create error recovery procedures
+- [ ] Add retry logic with exponential backoff
+- [ ] Implement circuit breaker pattern
+- [ ] Add structured logging
+- [ ] Create error recovery procedures
 
 **Exit Criterion**: System handles failures gracefully
 
-**Reference**: Error_Scenarios.md → Recovery Procedures
+**Reference**: documentation/error-scenarios.md → Recovery Procedures
 
 ---
 
@@ -562,49 +562,49 @@ Week 4+: Implementation & Refinement
 ### How Documents Relate
 
 ```
-Implementation_Plan.md (Master Plan)
+documentation/implementation-plan.md (Master Plan)
     │
-    ├─► Test_Plan.md (How to test each phase)
+    ├─► documentation/test-plan.md (How to test each phase)
     │
-    ├─► Blooms_Taxonomy_Specification.md (Core domain model)
+    ├─► documentation/blooms-taxonomy.md (Core domain model)
     │       │
-    │       ├─► DSPy_Prompt_Strategy.md (How to prompt LLM)
+    │       ├─► documentation/dspy-prompt-strategy.md (How to prompt LLM)
     │       │       │
-    │       │       └─► Error_Scenarios.md (When prompting fails)
+    │       │       └─► documentation/error-scenarios.md (When prompting fails)
     │       │
-    │       └─► Database_Schema_Design.md (Store objectives)
+    │       └─► documentation/database-design.md (Store objectives)
     │
-    ├─► API_Contract.md (Expose functionality)
+    ├─► documentation/api-contract.md (Expose functionality)
     │       │
-    │       └─► Error_Scenarios.md (API error responses)
+    │       └─► documentation/error-scenarios.md (API error responses)
     │
-    └─► TDD_Workflow.md (How to develop day-to-day)
+    └─► documentation/tdd-workflow.md (How to develop day-to-day)
             │
-            └─► Test_Plan.md (Testing execution)
+            └─► documentation/test-plan.md (Testing execution)
 ```
 
 ### Common Workflows
 
 **Workflow 1: Adding New Feature**
-1. Check **Implementation_Plan.md** for phase requirements
-2. Follow **TDD_Workflow.md** (Red-Green-Refactor)
-3. Write tests per **Test_Plan.md**
-4. Handle errors per **Error_Scenarios.md**
-5. Update **API_Contract.md** if adding endpoint
+1. Check **documentation/implementation-plan.md** for phase requirements
+2. Follow **documentation/tdd-workflow.md** (Red-Green-Refactor)
+3. Write tests per **documentation/test-plan.md**
+4. Handle errors per **documentation/error-scenarios.md**
+5. Update **documentation/api-contract.md** if adding endpoint
 
 **Workflow 2: Debugging LLM Issue**
-1. Check **DSPy_Prompt_Strategy.md** for prompt templates
-2. Review **Error_Scenarios.md** for common failures
+1. Check **documentation/dspy-prompt-strategy.md** for prompt templates
+2. Review **documentation/error-scenarios.md** for common failures
 3. Check logs (structured logging)
 4. Adjust prompt and retry
-5. Document fix in **Test_Plan.md** golden dataset
+5. Document fix in **documentation/test-plan.md** golden dataset
 
 **Workflow 3: Database Migration**
-1. Review **Database_Schema_Design.md** for schema
+1. Review **documentation/database-design.md** for schema
 2. Create Alembic migration
 3. Test migration on backup
 4. Apply migration
-5. Update **API_Contract.md** if schema changed
+5. Update **documentation/api-contract.md** if schema changed
 
 ---
 
@@ -660,29 +660,29 @@ Implementation_Plan.md (Master Plan)
 
 ## 📊 Success Metrics
 
-### Per-Phase Metrics (from Implementation_Plan.md)
+### Per-Phase Metrics (from documentation/implementation-plan.md)
 
 **Phase 1**: Environment Setup
-- ✅ Project structure created
-- ✅ Dependencies installed
-- ✅ Ollama connection verified
-- ✅ Hello World generates valid JSON (60%+ validity)
+- [ ] Project structure created
+- [ ] Dependencies installed
+- [ ] Ollama connection verified
+- [ ] Hello World generates valid JSON (60%+ validity)
 
 **Phase 2**: DSPy Modules
-- ✅ Generates 5+ objectives per topic
-- ✅ All verbs match Bloom's level
-- ✅ JSON validity ≥ 80%
-- ✅ Generation time < 20s per objective
+- [ ] Generates 5+ objectives per topic
+- [ ] All verbs match Bloom's level
+- [ ] JSON validity ≥ 80%
+- [ ] Generation time < 20s per objective
 
 **Phase 3**: API Layer
-- ✅ All endpoints return 200 on success
-- ✅ Error responses are clear and actionable
-- ✅ Request IDs included for debugging
+- [ ] All endpoints return 200 on success
+- [ ] Error responses are clear and actionable
+- [ ] Request IDs included for debugging
 
 **Phase 4-5**: Frontend & Polish
-- ✅ End-to-end flow works
-- ✅ Export/import functional
-- ✅ User can build complete course
+- [ ] End-to-end flow works
+- [ ] Export/import functional
+- [ ] User can build complete course
 
 ---
 
@@ -705,9 +705,9 @@ Implementation_Plan.md (Master Plan)
 
 ### Month 2: Practice & Apply
 - Follow TDD workflow daily
-- Refer to API Contract when building endpoints
-- Use Error Scenarios guide when debugging
-- Check Test Plan for coverage requirements
+- Refer to documentation/api-contract.md when building endpoints
+- Use documentation/error-scenarios.md when debugging
+- Check documentation/test-plan.md for coverage requirements
 
 ### Month 3: Master & Optimize
 - Optimize prompts using DSPy guide
@@ -721,10 +721,10 @@ Implementation_Plan.md (Master Plan)
 
 ### When to Update Docs
 
-- **After architectural changes**: Update Implementation_Plan.md
-- **After API changes**: Update API_Contract.md
-- **After schema changes**: Update Database_Schema_Design.md
-- **After bug fixes**: Update Error_Scenarios.md
+- **After architectural changes**: Update `documentation/implementation-plan.md`
+- **After API changes**: Update `documentation/api-contract.md`
+- **After schema changes**: Update `documentation/database-design.md`
+- **After bug fixes**: Update `documentation/error-scenarios.md`
 - ** quarterly**: Review and update all documents
 
 ### How to Update
@@ -733,7 +733,7 @@ Implementation_Plan.md (Master Plan)
 2. Make changes to relevant document
 3. Update version number
 4. Add entry to Version History table
-5. Commit with clear message: `docs: Updated API_Contract.md with new endpoints`
+5. Commit with clear message: `docs: Updated documentation/api-contract.md with new endpoints`
 
 ---
 
@@ -741,10 +741,10 @@ Implementation_Plan.md (Master Plan)
 
 ```bash
 # Project setup
-mkdir -p backend/src/{core,modules} tests logs
-cd backend && python -m venv venv
+mkdir -p backend/src/{api,core,modules} backend/{tests,logs,data}
+cd backend && python3 -m venv venv
 source venv/bin/activate
-pip install dspy-ai pydantic fastapi uvicorn pytest
+pip install dspy-ai pydantic fastapi uvicorn typer python-dotenv pytest pytest-cov
 
 # Ollama setup
 ollama pull deepseek-r1:1.5b
@@ -757,14 +757,14 @@ pytest tests/unit/ tests/mocked/ -v
 pytest --cov=src --cov-report=html
 
 # Start API server
-uvicorn src.api:app --reload
+uvicorn src.api.main:app --reload
 
 # Check database
-sqlite3 backend/data/open_instruct.db ".tables"
-sqlite3 backend/data/open_instruct.db "SELECT COUNT(*) FROM courses;"
+sqlite3 data/open_instruct.db ".tables"
+sqlite3 data/open_instruct.db "SELECT COUNT(*) FROM courses;"
 
 # View logs
-tail -f backend/logs/production.log
+tail -f logs/production.log
 ```
 
 ---

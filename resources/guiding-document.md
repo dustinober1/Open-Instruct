@@ -7,7 +7,7 @@ Core Philosophy: "Structure over Syntax." We don't just generate text; we genera
 
 1. System Requirements Specification (SRS)
 1.1 Functional Requirements (FR)
-FR-01 (Taxonomy Alignment): The system must accept a raw topic and output Learning Objectives that strictly adhere to a specified Bloom’s Taxonomy level (e.g., if "Analyze" is selected, verbs must be analytical, not recall-based).
+FR-01 (Taxonomy Alignment): The system must accept a raw topic and output Learning Objectives tagged with Bloom’s Taxonomy levels, where each objective’s verb strictly matches the approved verb list for its assigned level (e.g., objectives tagged "Analyze" must use analytical verbs, not recall verbs).
 
 FR-02 (Structured Output): All AI outputs must be returned as validated JSON objects, not raw strings.
 
@@ -36,109 +36,99 @@ Frontend Framework: Next.js (App Router) + React Flow
 Local LLM Host: Ollama
 
 2. Implementation Roadmap (Task List)
-This list is broken down into logical "Sprints" or Phases.
+This list is intentionally high-level. The detailed execution plan, acceptance criteria, and risks live in `documentation/implementation-plan.md`.
 
-Phase 1: Core Logic & CLI (The Engine)
-Focus: Getting the "Brain" working without a UI.
+Phase 1: Environment & Core Logic Setup
+Focus: Establish the "contract" and confirm the local LLM connection.
 
-[ ] Task 1.1: Repo Initialization
+[ ] Task 1.1: Project Skeleton + Dependencies
 
-Action: Initialize Git repo. Create virtualenv. Create requirements.txt containing dspy, pydantic, pytest.
+Action: Create `backend/` structure, set up a virtualenv, and install core dependencies (`dspy-ai`, `pydantic`, `pytest`, etc.).
 
-Outcome: A clean environment ready for code.
+Outcome: Running Python from `backend/` works, and dependencies import cleanly.
 
 [ ] Task 1.2: Define Pydantic Models (The "Contract")
 
-Action: Create src/models.py. Define classes for LearningObjective, LessonContent, and QuizItem.
+Action: Create `backend/src/core/models.py`. Define `BloomLevel`, `LearningObjective`, `CourseStructure`, and `QuizQuestion`.
 
-Guidance: Ensure strict typing (e.g., bloom_level should be an Enum, not a string).
+Guidance: Bloom levels are enums; verbs are validated against approved lists.
 
 [ ] Task 1.3: Configure DSPy Client
 
-Action: Create src/llm_config.py. Set up the connection to Ollama (base_url usually http://localhost:11434).
+Action: Create `backend/src/core/dspy_client.py`. Connect DSPy to Ollama (`http://localhost:11434`) and set a default model (e.g., `deepseek-r1:1.5b`).
 
-Note: Add a fallback to a dummy/mock model for testing without a GPU.
+Note: Provide a mock/dummy LM for unit tests (no real LLM calls required).
 
-[ ] Task 1.4: Build "The Architect" Module (Objectives)
+Phase 2: DSPy Modules + CLI
+Focus: Reliable structured generation before any UI.
 
-Action: Implement dspy.Signature and dspy.Module for generating objectives.
+[ ] Task 2.1: Build "The Architect" Module (Objectives)
 
-Acceptance Criteria: Input "Photosynthesis" + Level "Recall" -> Output list of objectives using verbs like "Define", "List", "State".
+Action: Implement a `dspy.Signature` + `dspy.Module` that generates objectives and returns a validated `CourseStructure`.
 
-[ ] Task 1.5: Build "The Assessor" Module (Quizzes)
+Acceptance Criteria: Input "Photosynthesis" -> Output objectives where each objective’s `level` is one of the 6 Bloom levels and each `verb` matches the approved list for that level.
 
-Action: Implement dspy.Signature for generating a Multiple Choice Question (MCQ) from a given Objective.
+[ ] Task 2.2: Build "The Assessor" Module (Quizzes)
 
-Acceptance Criteria: Output must separate correct_answer from distractors list.
+Action: Implement a `dspy.Signature` that generates one MCQ per objective.
 
-[ ] Task 1.6: Create CLI Entry Point
+Acceptance Criteria: Output separates `correct_answer` from exactly 3 unique `distractors`.
 
-Action: Create main.py using typer or argparse.
+[ ] Task 2.3: Create CLI Entry Point
 
-Outcome: Running python main.py "History of AI" --json prints a full course structure to stdout.
+Action: Create `backend/src/main.py` using Typer (or argparse).
 
-Phase 2: The API Layer
-Focus: Exposing the engine to the web.
+Outcome: From `backend/`, running `python -m src.main "History of AI" --json` prints a full course structure to stdout.
 
-[ ] Task 2.1: FastAPI Skeleton
+Phase 3: The API Layer
+Focus: Expose the engine via REST.
 
-Action: Install fastapi and uvicorn. Create app/main.py.
+[ ] Task 3.1: FastAPI Skeleton
 
-Outcome: GET /health returns 200 OK.
+Action: Install `fastapi` and `uvicorn`. Create `backend/src/api/main.py`.
 
-[ ] Task 2.2: Endpoint - Generate Syllabus
+Outcome: `GET /health` returns 200 OK.
 
-Action: Create POST /api/v1/generate/objectives. Accepts { topic: str, level: str }.
+[ ] Task 3.2: Core Generation Endpoints
 
-Logic: Calls the DSPy module from Task 1.4. Returns JSON.
+Action: Implement:
+- `POST /api/v1/generate/objectives` (topic, target_audience, num_objectives)
+- `POST /api/v1/generate/quiz` (objective_id, difficulty)
 
-[ ] Task 2.3: Endpoint - Expand Module
+Logic: Wrap DSPy module calls and return validated JSON.
 
-Action: Create POST /api/v1/generate/content. Accepts { objective_id: str }.
+[ ] Task 3.3: Async Integration
 
-Logic: Generates the actual lesson text and quiz for a specific node.
+Action: Ensure DSPy calls do not block the event loop (use `fastapi.concurrency.run_in_threadpool` if needed).
 
-[ ] Task 2.4: Async Integration
+Phase 4: The Frontend (Course Builder)
+Focus: Visualize and edit the curriculum.
 
-Action: Ensure DSPy calls do not block the main thread (use fastapi.concurrency.run_in_threadpool if DSPy methods aren't natively async yet).
+[ ] Task 4.1: Next.js Setup
 
-Phase 3: The Frontend (Course Builder)
-Focus: Visualizing the curriculum.
+Action: `npx create-next-app@latest`. Install `shadcn/ui` components (Button, Input, Card).
 
-[ ] Task 3.1: Next.js Setup
+[ ] Task 4.2: Curriculum Graph View
 
-Action: npx create-next-app@latest. Install shadcn/ui components (Button, Input, Card).
+Action: Integrate React Flow and map API objectives to nodes.
 
-[ ] Task 3.2: Store Setup (Zustand)
+[ ] Task 4.3: Module Editor View
 
-Action: Set up a global store to hold the "Course State" (the list of modules and their content).
+Action: Clicking a node opens a side panel showing generated content with an "Edit" button.
 
-Why: We need to persist the course data as the user navigates between different views.
+Phase 5: Export & Import
+Focus: Share generated courses.
 
-[ ] Task 3.3: The "Curriculum Graph" View
+[ ] Task 5.1: Export Button
 
-Action: Integrate reactflow.
-
-Logic: Map the JSON response from the API to React Flow nodes.
-
-Outcome: User types a topic -> A tree graph appears on screen.
-
-[ ] Task 3.4: Module Editor View
-
-Action: Clicking a node opens a side panel (Sheet/Drawer) showing the generated content.
-
-Feature: Add an "Edit" button to manually tweak the AI generation.
-
-[ ] Task 3.5: Export Button
-
-Action: specific button that downloads the current state as course.json.
+Action: Add a button that downloads the current course state as versioned JSON.
 
 3. Developer "Cheat Sheet"
 Give this section to the junior dev to unblock them before they start.
 
 1. How to run the local LLM:
 
-"Before you start coding, make sure you have Ollama installed. Run ollama run llama3. This will open a server on port 11434. Our DSPy config will talk to this port."
+"Before you start coding, make sure you have Ollama installed and running. Start the service with `ollama serve` and pull the default model with `ollama pull deepseek-r1:1.5b`. Our DSPy config talks to `http://localhost:11434`."
 
 2. Key DSPy Concept:
 
@@ -150,12 +140,13 @@ Bash
 
 open-instruction/
 ├── backend/
-│   ├── app/
-│   │   ├── api/          # FastAPI Routes
-│   │   └── main.py       # Server entry
-│   ├── core/
-│   │   ├── dspy_modules/ # The "Brains" (Signatures)
-│   │   └── models.py     # Pydantic Schemas
-│   └── requirements.txt
+│   ├── src/
+│   │   ├── api/          # FastAPI app + routers
+│   │   ├── core/         # Config, DSPy client, Pydantic models
+│   │   ├── modules/      # DSPy modules ("Brains")
+│   │   └── main.py       # CLI entry point
+│   ├── tests/            # pytest suite
+│   ├── requirements.txt
+│   └── .env
 ├── frontend/             # Next.js App
 └── README.md

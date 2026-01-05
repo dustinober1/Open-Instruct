@@ -23,7 +23,7 @@ Run `ollama pull deepseek-r1:1.5b`
 **Cause**: The LLM outputted text like "Here is your JSON:" instead of just the JSON.
 **Fix**:
 -   **Immediate**: Retry the command. It might work the second time.
--   **Permenant**: Switch to a more powerful model (e.g., OpenAI) or check `DSPy_Prompt_Strategy.md` to improve your prompt assertions.
+-   **Permanent**: Switch to a more powerful model (e.g., OpenAI) or check `documentation/dspy-prompt-strategy.md` to improve your prompt assertions.
 
 ---
 

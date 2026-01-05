@@ -64,7 +64,7 @@ Open [02-prerequisites.md](02-prerequisites.md) and verify:
 ### Quick Environment Check
 ```bash
 # 1. Check Python
-python --version  # Should be 3.9+
+python3 --version  # Should be 3.10+
 
 # 2. Check Git
 git --version
@@ -81,11 +81,11 @@ cd Open_Instruct
 ### Quick Setup (If Not Done)
 ```bash
 # Create backend structure
-mkdir -p backend/src/{core,modules} tests logs
+mkdir -p backend/src/{api,core,modules} backend/{tests,logs,data}
 
 # Set up virtual environment
 cd backend
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # macOS/Linux
 
 # Install core dependencies

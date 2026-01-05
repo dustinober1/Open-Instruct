@@ -42,7 +42,7 @@ graph LR
 2. **Assessment Module**
    - Creates quiz questions for each objective
    - Ensures question complexity matches objective level
-   - Generates multiple choice, short answer, essay questions
+   - Generates multiple-choice questions (MVP)
    - Validates question quality
 
 3. **REST API Layer**
@@ -99,7 +99,7 @@ Bloom's Taxonomy provides a proven framework for:
 
 ## 🛠️ Technical Stack
 
-- **Language**: Python 3.9+
+- **Language**: Python 3.10+
 - **AI Framework**: DSPy (structured LLM prompting)
 - **Web Framework**: FastAPI (async, auto-docs)
 - **Database**: SQLite (MVP)
@@ -110,32 +110,32 @@ Bloom's Taxonomy provides a proven framework for:
 
 ## 🚀 Success Criteria
 
-### Phase 1 ✅ (Complete)
+### Phase 1 (Target): Environment & Core Logic
 - [ ] Project structure created
 - [ ] Dependencies installed
 - [ ] Ollama connection verified
 - [ ] "Hello World" test passes
 
-### Phase 2 ✅ (In Progress)
+### Phase 2 (Target): DSPy Modules
 - [ ] Generate 5+ objectives per topic
 - [ ] All verbs match Bloom's level
 - [ ] JSON validity ≥ 80%
 - [ ] Generation time < 20s per objective
 
-### Phase 3 📋 (Next)
+### Phase 3 (Target): API Layer
 - [ ] All endpoints return 200 on success
 - [ ] Error responses are clear
 - [ ] Request IDs included for debugging
 
-### Phase 4 📋 (Later)
-- [ ] SQLite schema created
-- [ ] CRUD operations work
-- [ ] Caching functional
+### Phase 4 (Target): Frontend (Course Builder)
+- [ ] Topic input triggers objective generation
+- [ ] Objectives render in a curriculum graph
+- [ ] Export downloads a course JSON file
 
-### Phase 5 📋 (Final)
-- [ ] Retry logic implemented
-- [ ] Circuit breaker pattern
-- [ ] Graceful degradation
+### Phase 5 (Target): Export & Polish
+- [ ] Exported JSON validates against schema
+- [ ] Import restores a previously exported course
+- [ ] Error handling is user-friendly
 
 ## 🎯 Learning Objectives for This Project
 

@@ -1,6 +1,6 @@
 # Implementation Plan: Open-Instruction Engine
 
-This document outlines the step-by-step plan to build the **Open-Instruction** educational content generation engine. It expands on the `Guiding_Document.md` with specific technical strategies, schemas, and validation methods.
+This document outlines the step-by-step plan to build the **Open-Instruction** educational content generation engine. It expands on `resources/guiding-document.md` with specific technical strategies, schemas, and validation methods.
 
 ## Core Philosophy
 **"Structure over Syntax"**: We prioritize valid, schema-compliant JSON outputs over conversational text. We will leverage **DSPy** for prompt optimization and **Pydantic** for strict validation, with **Ollama** running local models (DeepSeek-R1 1.5B).
@@ -14,18 +14,23 @@ This document outlines the step-by-step plan to build the **Open-Instruction** e
 *   **Directory Structure**:
     ```text
     open-instruction/
-    ├── backend/
-    │   ├── src/
-    │   │   ├── core/
-    │   │   │   ├── config.py       # Settings (Ollama URL, model names)
-    │   │   │   ├── dspy_client.py  # DSPy LM configuration
-    │   │   │   └── models.py       # Pydantic Schemas (The "Contract")
-    │   │   ├── modules/
-    │   │   │   ├── architect.py    # Learning Objective Generation
-    │   │   │   └── assessor.py     # Quiz Generation
-    │   │   └── main.py             # CLI Entry point
-    │   ├── requirements.txt
-    │   └── .env
+	    ├── backend/
+	    │   ├── src/
+	    │   │   ├── api/
+	    │   │   │   └── main.py         # FastAPI app entry point
+	    │   │   ├── core/
+	    │   │   │   ├── config.py       # Settings (Ollama URL, model names)
+	    │   │   │   ├── dspy_client.py  # DSPy LM configuration
+	    │   │   │   └── models.py       # Pydantic Schemas (The "Contract")
+	    │   │   ├── modules/
+	    │   │   │   ├── architect.py    # Learning Objective Generation
+	    │   │   │   └── assessor.py     # Quiz Generation
+	    │   │   └── main.py             # CLI Entry point
+	    │   ├── data/                   # SQLite DB + caches (local-first)
+	    │   ├── logs/                   # App logs
+	    │   ├── tests/                  # pytest suite
+	    │   ├── requirements.txt
+	    │   └── .env
     ├── frontend/                   # Next.js app (placeholder for now)
     └── README.md
     ```
@@ -76,10 +81,11 @@ class CourseStructure(BaseModel):
         """Generate a list of educational learning objectives based on Bloom's Taxonomy. 
         Output MUST be valid JSON conforming to the CourseStructure schema."""
         
-        topic: str = dspy.InputField(desc="The main subject topic")
-        target_audience: str = dspy.InputField(desc="The learner persona (e.g., 'Grade 10 students', 'Senior Developers')")
-        outcome: CourseStructure = dspy.OutputField(desc="Structured list of objectives")
-    ```
+	        topic: str = dspy.InputField(desc="The main subject topic")
+	        target_audience: str = dspy.InputField(desc="The learner persona (e.g., 'Grade 10 students', 'Senior Developers')")
+	        num_objectives: int = dspy.InputField(desc="Number of objectives to generate (5-10 recommended)", default=6)
+	        outcome: CourseStructure = dspy.OutputField(desc="Structured list of objectives")
+	    ```
 *   **Assertions**:
     *   Since 1.5B models can hallucinate formats, we will add `dspy.Assert` to verify that `verb` actually exists in a predefined list of Bloom's verbs for that specific level.
 
@@ -101,7 +107,7 @@ class CourseStructure(BaseModel):
     ```
 
 ### Step 2.3: CLI Verification
-*   Create `python backend/src/main.py` to run these modules via command line.
+*   Create `backend/src/main.py` to run these modules via command line (from `backend/`, run `python -m src.main ...`).
 *   **Verification**: Run 10 iterations. Success rate > 80% JSON validity required to move to API phase.
 
 ---
@@ -111,8 +117,8 @@ class CourseStructure(BaseModel):
 
 ### Step 3.1: API Setup
 *   `GET /health`: Sanity check.
-*   `POST /generate/objectives`: Accepts `{ topic: str }`, calls `Architect` module.
-*   `POST /generate/quiz`: Accepts `{ objective: str }`, calls `Assessor` module.
+*   `POST /api/v1/generate/objectives`: Accepts `{ topic, target_audience, num_objectives, options }`, calls `Architect` module.
+*   `POST /api/v1/generate/quiz`: Accepts `{ objective_id, difficulty }`, calls `Assessor` module.
 
 ### Step 3.2: Async & Error Handling
 *   Since local LLMs are slow, these endpoints might take 10-30 seconds.
@@ -160,8 +166,8 @@ class CourseStructure(BaseModel):
 *   **Benchmark**: Log average generation time per objective (target: < 15 seconds on local hardware)
 
 ### Step 6.3: Golden Dataset
-*   Create `tests/golden_set.json` with 10 known topics and their expected outputs
-*   Use for regression testing when modifying DSPy prompts
+*   Create `backend/tests/golden_set.json` with diverse generation inputs and invariant expectations (schema validity, verb/level alignment, uniqueness). Avoid asserting exact text output.
+*   Use for regression testing when modifying DSPy prompts (re-run integration tests and confirm invariants still hold)
 
 ---
 
@@ -258,10 +264,11 @@ class CourseStructure(BaseModel):
 *   **Dockerfile**:
     ```dockerfile
     FROM python:3.11-slim
-    # Install Ollama and DeepSeek-R1
+    # Install backend dependencies
+    # Note: run Ollama separately (local install or sidecar container)
     # Copy backend code
     # Expose port 8000
-    CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0"]
+    CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0"]
     ```
 *   **Benefit**: Consistent environment, easy deployment
 
@@ -402,8 +409,8 @@ class CourseStructure(BaseModel):
 ### Phase 3: The API Layer (FastAPI)
 **Acceptance Criteria**:
 - [ ] `/health` endpoint returns 200 + Ollama connection status
-- [ ] `/generate/objectives` accepts POST request and returns JSON within 30 seconds
-- [ ] `/generate/quiz` returns valid quiz question or structured error
+- [ ] `/api/v1/generate/objectives` accepts POST request and returns JSON within 30 seconds
+- [ ] `/api/v1/generate/quiz` returns valid quiz question or structured error
 - [ ] API documentation accessible at `/docs` (Auto-generated by FastAPI)
 - [ ] All endpoints include request IDs for debugging
 - [ ] Error responses include actionable messages (not just stack traces)
@@ -511,11 +518,10 @@ class CourseStructure(BaseModel):
 ### Task Checklist
 1.  **Initialize Project Structure**:
     ```bash
-    mkdir -p backend/src/{core,modules} tests logs
+    mkdir -p backend/src/{api,core,modules} backend/{tests,logs,data}
     cd backend
-    python -m venv venv
+    python3 -m venv venv
     source venv/bin/activate  # or venv\Scripts\activate on Windows
-    git init
     echo "venv/" >> .gitignore
     echo "__pycache__/" >> .gitignore
     echo "*.pyc" >> .gitignore
@@ -524,7 +530,7 @@ class CourseStructure(BaseModel):
 
 2.  **Install Core Dependencies**:
     ```bash
-    pip install dspy-ai pydantic fastapi uvicorn typer python-dotenv pytest pytest-coverage
+    pip install dspy-ai pydantic fastapi uvicorn typer python-dotenv pytest pytest-cov
     pip freeze > requirements.txt
     ```
 
@@ -535,19 +541,19 @@ class CourseStructure(BaseModel):
     ollama run deepseek-r1:1.5b "Test connection"  # Quick sanity check
     ```
 
-4.  **Implement Core Models** ([`src/core/models.py`](backend/src/core/models.py)):
+4.  **Implement Core Models** ([`backend/src/core/models.py`](../backend/src/core/models.py)):
     - Define `BloomLevel` enum
     - Define `LearningObjective` Pydantic model
     - Define `CourseStructure` Pydantic model
     - Define `QuizQuestion` Pydantic model
     - Add hardcoded Bloom's verb lists per level
 
-5.  **Implement DSPy Client** ([`src/core/dspy_client.py`](backend/src/core/dspy_client.py)):
+5.  **Implement DSPy Client** ([`backend/src/core/dspy_client.py`](../backend/src/core/dspy_client.py)):
     - Configure `dspy.lm.Ollama` with `http://localhost:11434`
     - Set model to `deepseek-r1:1.5b`
     - Add simple connection test function
 
-6.  **Create "Hello World" Test** ([`tests/hello_world.py`](tests/hello_world.py)):
+6.  **Create "Hello World" Test** ([`backend/tests/hello_world.py`](../backend/tests/hello_world.py)):
     ```python
     # Goal: Generate 2 learning objectives about "Python functions"
     # Verify: Output is valid JSON matching CourseStructure schema

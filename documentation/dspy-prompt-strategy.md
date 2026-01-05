@@ -2,7 +2,7 @@
 
 **Audience**: Junior Developers
 **Purpose**: Complete guide to writing and optimizing DSPy prompts for Open-Instruct
-**Prerequisite**: Read [Blooms_Taxonomy_Specification.md](Blooms_Taxonomy_Specification.md)
+**Prerequisite**: Read [blooms-taxonomy.md](blooms-taxonomy.md)
 
 ---
 

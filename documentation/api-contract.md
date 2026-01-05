@@ -61,7 +61,7 @@
 
 **Future (Post-MVP)**:
 ```http
-GET /api/v1/generate/objectives
+POST /api/v1/generate/objectives
 Authorization: Bearer <token>
 ```
 
@@ -120,7 +120,7 @@ GET /health
 {
   "status": "healthy",
   "ollama_connected": true,
-  "model": "deepseek-r1:1.5b",
+  "model_version": "deepseek-r1:1.5b",
   "version": "1.0.0",
   "uptime_seconds": 1234
 }
@@ -132,6 +132,7 @@ GET /health
   "status": "degraded",
   "ollama_connected": false,
   "error": "Ollama service not running",
+  "model_version": "deepseek-r1:1.5b",
   "version": "1.0.0"
 }
 ```
@@ -225,6 +226,10 @@ POST /api/v1/generate/objectives
         }
       ]
     }
+  },
+  "meta": {
+    "request_id": "req_abc123",
+    "timestamp": "2025-01-05T10:30:00Z"
   }
 }
 ```
@@ -240,6 +245,10 @@ POST /api/v1/generate/objectives
       "retry_after_seconds": 30,
       "cached_courses_available": true
     }
+  },
+  "meta": {
+    "request_id": "req_abc123",
+    "timestamp": "2025-01-05T10:30:00Z"
   }
 }
 ```
@@ -307,6 +316,10 @@ POST /api/v1/generate/quiz
     "details": {
       "available_objectives": ["LO-001", "LO-002", "LO-003"]
     }
+  },
+  "meta": {
+    "request_id": "req_def456",
+    "timestamp": "2025-01-05T10:31:00Z"
   }
 }
 ```
@@ -438,6 +451,10 @@ DELETE /api/v1/courses/{course_id}
   "error": {
     "code": "NOT_FOUND",
     "message": "Course course_xyz789 not found"
+  },
+  "meta": {
+    "request_id": "req_mno345",
+    "timestamp": "2025-01-05T11:05:00Z"
   }
 }
 ```
@@ -523,11 +540,15 @@ POST /api/v1/courses/import
       "invalid_objectives": [
         {
           "id": "LO-001",
-          "verb": "create",  # Invalid for Remember level
+          "verb": "create",
           "level": "Remember"
         }
       ]
     }
+  },
+  "meta": {
+    "request_id": "req_pqr678",
+    "timestamp": "2025-01-05T11:15:00Z"
   }
 }
 ```
@@ -656,7 +677,7 @@ class ErrorResponse(BaseModel):
     "details": {
       "invalid_verb": "create",
       "level": "Remember",
-      "approved_verbs": ["define", "list", "name", "identify", ...]
+      "approved_verbs": ["define", "list", "name", "identify"]
     }
   },
   "meta": {
@@ -677,7 +698,7 @@ class ErrorResponse(BaseModel):
 ### Future Implementation
 
 ```http
-GET /api/v1/generate/objectives
+POST /api/v1/generate/objectives
 ```
 
 **Response 429** (Rate limited):
@@ -692,6 +713,10 @@ GET /api/v1/generate/objectives
       "limit": 10,
       "window": "1 hour"
     }
+  },
+  "meta": {
+    "request_id": "req_rate_limit_123",
+    "timestamp": "2025-01-05T11:30:00Z"
   }
 }
 ```

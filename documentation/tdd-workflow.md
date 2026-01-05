@@ -2,7 +2,7 @@
 
 **Audience**: Junior Developers
 **Purpose**: Step-by-step guide for Test-Driven Development on Open-Instruct
-**Prerequisite**: Read [Test_Plan.md](Test_Plan.md) first
+**Prerequisite**: Read [test-plan.md](test-plan.md) first
 
 ---
 
@@ -628,28 +628,37 @@ print(result)
 
 #### 3. Save Real Outputs
 
-Create `tests/golden_set.json`:
+Create `backend/tests/golden_set.json` (from `backend/`, this is `tests/golden_set.json`):
 
 ```json
-{
-  "python_functions": {
-    "input": {
+[
+  {
+    "id": "python_functions",
+    "request": {
       "topic": "Python functions",
-      "target_audience": "Intermediate Python developers"
+      "target_audience": "Intermediate Python developers",
+      "num_objectives": 6
     },
-    "output": {
+    "expectations": {
+      "min_objectives": 5,
+      "max_objectives": 10,
+      "require_unique_objective_ids": true,
+      "require_valid_bloom_levels": true,
+      "require_verbs_match_blooms_level": true
+    },
+    "example_output": {
       "topic": "Python functions",
       "objectives": [
         {
           "id": "LO-001",
           "verb": "define",
-          "content": "What a function is and how it's defined",
+          "content": "what a function is and why we use them",
           "level": "Remember"
         }
       ]
     }
   }
-}
+]
 ```
 
 #### 4. Write Tests Based on Real Outputs
