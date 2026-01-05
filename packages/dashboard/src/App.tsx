@@ -7,7 +7,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, theme } from 'antd';
 import { MainLayout } from './components';
-import { HomePage, AnalyticsPage } from './pages';
+import { HomePage, AnalyticsPage, SettingsPage } from './pages';
 import { useHealthCheck } from './hooks';
 
 const App: React.FC = () => {
@@ -36,7 +36,7 @@ const App: React.FC = () => {
             <Route path="/courses" element={<HomePage />} />
             <Route path="/quiz" element={<HomePage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/settings" element={<div>Settings page coming soon</div>} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </MainLayout>

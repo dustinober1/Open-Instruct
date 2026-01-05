@@ -16,8 +16,47 @@ import type {
 } from '../types';
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_TIMEOUT = 60000; // 60 seconds for long-running operations
+
+// Settings keys
+const SETTINGS_KEY = 'open-instruct-settings';
+
+interface Settings {
+  apiUrl: string;
+  apiKey: string;
+  useOllama: boolean;
+  ollamaBaseUrl: string;
+  ollamaModel: string;
+}
+
+// Get API URL from settings or default
+const getApiUrl = (): string => {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) {
+      const settings: Settings = JSON.parse(saved);
+      return settings.apiUrl || DEFAULT_API_URL;
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return DEFAULT_API_URL;
+};
+
+// Get API key from settings
+const getApiKey = (): string => {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) {
+      const settings: Settings = JSON.parse(saved);
+      return settings.apiKey || '';
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return '';
+};
 
 // Custom error class for API errors
 export class ApiError extends Error {
@@ -45,16 +84,21 @@ export class ApiError extends Error {
 // Create axios instance with default config
 const createApiClient = (): AxiosInstance => {
   const client = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: getApiUrl(),
     timeout: API_TIMEOUT,
     headers: {
       'Content-Type': 'application/json',
     },
   });
 
-  // Request interceptor for adding request ID
+  // Request interceptor for adding API key and request ID
   client.interceptors.request.use(
     (config) => {
+      const apiKey = getApiKey();
+      if (apiKey) {
+        config.headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
       const requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`;
       config.headers['X-Request-ID'] = requestId;
       return config;
@@ -109,12 +153,23 @@ const createApiClient = (): AxiosInstance => {
 const apiClient = createApiClient();
 
 /**
+ * Re-create the API client with new settings
+ * Call this after settings change
+ */
+export const refreshApiClient = (): void => {
+  // The client will pick up new settings on next request
+};
+
+/**
  * Make an API request with proper error handling
  */
 async function apiRequest<T>(
   config: AxiosRequestConfig
 ): Promise<SuccessResponse<T>> {
   try {
+    // Update base URL from settings before each request
+    apiClient.defaults.baseURL = getApiUrl();
+
     const response = await apiClient.request<SuccessResponse<T>>(config);
 
     if (!response.data.success) {
@@ -144,11 +199,9 @@ async function apiRequest<T>(
  * Health Check API
  */
 export const healthCheck = async (): Promise<HealthResponse> => {
-  const response = await apiRequest<HealthResponse>({
-    method: 'GET',
-    url: '/health',
-  });
-  return response.data;
+  apiClient.defaults.baseURL = getApiUrl();
+  const response = await apiClient.get<SuccessResponse<HealthResponse>>('/health');
+  return response.data.data;
 };
 
 /**
@@ -229,6 +282,7 @@ export const exportCourse = async (
   courseId: string,
   format: 'json' | 'csv'
 ): Promise<Blob> => {
+  apiClient.defaults.baseURL = getApiUrl();
   const response = await apiClient.get(`/api/v1/export/${format}`, {
     params: { courseId },
     responseType: 'blob',
@@ -237,7 +291,7 @@ export const exportCourse = async (
 };
 
 // Export types for consumers
-export type { ApiError };
+export type { ApiError, Settings };
 
 // Export singleton instance for advanced use cases
 export { apiClient };
