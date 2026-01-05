@@ -48,7 +48,7 @@ const QuizGenerator: React.FC<QuizGeneratorProps> = ({
 
   if (objectives.length === 0) {
     return (
-      <Card bordered={false}>
+      <Card variant="borderless">
         <Alert
           message="No Objectives Available"
           description="Please generate learning objectives first before creating quizzes."
