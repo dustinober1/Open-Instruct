@@ -1,94 +1,82 @@
 [
   {
-    "id": "python_functions_beginner",
-    "request": {
-      "topic": "Python Functions",
-      "target_audience": "Beginner Developers",
-      "num_objectives": 6
-    },
-    "expectations": {
-      "min_objectives": 5,
-      "max_objectives": 10,
-      "require_unique_objective_ids": true,
-      "require_valid_bloom_levels": true,
-      "require_verbs_match_blooms_level": true
-    },
-    "example_output": {
-      "topic": "Python Functions",
-      "objectives": [
-        {
-          "id": "LO-001",
-          "verb": "define",
-          "content": "the purpose of a function in Python",
-          "level": "Remember"
-        },
-        {
-          "id": "LO-002",
-          "verb": "implement",
-          "content": "a simple function using the def keyword",
-          "level": "Apply"
-        }
-      ]
-    }
+    "id": "machine_learning_junior_dev",
+    "topic": "Introduction to Machine Learning",
+    "target_audience": "Junior developers with basic Python knowledge",
+    "num_objectives": 6,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
+    "description": "Covers ML fundamentals, supervised/unsupervised learning, and basic model evaluation"
   },
   {
-    "id": "photosynthesis_high_school",
-    "request": {
-      "topic": "Photosynthesis",
-      "target_audience": "High school biology students",
-      "num_objectives": 6
-    },
-    "expectations": {
-      "min_objectives": 5,
-      "max_objectives": 10,
-      "require_unique_objective_ids": true,
-      "require_valid_bloom_levels": true,
-      "require_verbs_match_blooms_level": true
-    }
+    "id": "fastapi_backend_dev",
+    "topic": "RESTful API Design with FastAPI",
+    "target_audience": "Backend developers familiar with Python",
+    "num_objectives": 5,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Create"],
+    "description": "Focuses on REST principles, HTTP methods, endpoint design, and API security"
   },
   {
-    "id": "sql_joins_beginner",
-    "request": {
-      "topic": "SQL JOINs",
-      "target_audience": "Beginner data analysts",
-      "num_objectives": 6
-    },
-    "expectations": {
-      "min_objectives": 5,
-      "max_objectives": 10,
-      "require_unique_objective_ids": true,
-      "require_valid_bloom_levels": true,
-      "require_verbs_match_blooms_level": true
-    }
+    "id": "docker_devops",
+    "topic": "Docker Containerization Fundamentals",
+    "target_audience": "DevOps engineers and developers",
+    "num_objectives": 6,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
+    "description": "Covers Docker concepts, container creation, Dockerfiles, compose, and orchestration"
   },
   {
-    "id": "world_war_ii_high_school",
-    "request": {
-      "topic": "World War II",
-      "target_audience": "High school history students",
-      "num_objectives": 6
-    },
-    "expectations": {
-      "min_objectives": 5,
-      "max_objectives": 10,
-      "require_unique_objective_ids": true,
-      "require_valid_bloom_levels": true,
-      "require_verbs_match_blooms_level": true
-    }
+    "id": "react_hooks_frontend",
+    "topic": "React Hooks and State Management",
+    "target_audience": "Frontend developers with React experience",
+    "num_objectives": 5,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate"],
+    "description": "Teaches useState, useEffect, custom hooks, context, and performance optimization"
   },
   {
-    "id": "linear_algebra_undergrad",
-    "request": {
-      "topic": "Introduction to Linear Algebra",
-      "target_audience": "Undergraduate students",
-      "num_objectives": 6
-    },
-    "expectations": {
-      "min_objectives": 5,
-      "max_objectives": 10,
-      "require_unique_objective_ids": true,
-      "require_valid_bloom_levels": true,
-      "require_verbs_match_blooms_level": true
-    }
+    "id": "sql_database_backend",
+    "topic": "SQL Database Design and Optimization",
+    "target_audience": "Backend developers and data analysts",
+    "num_objectives": 6,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
+    "description": "Covers normalization, indexing, query optimization, transactions, and database scaling"
+  },
+  {
+    "id": "git_version_control_all",
+    "topic": "Git Version Control Best Practices",
+    "target_audience": "Software developers of all levels",
+    "num_objectives": 5,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate"],
+    "description": "Teaches branching strategies, merge conflicts, rebasing, and CI/CD integration"
+  },
+  {
+    "id": "aws_cloud_solutions_architect",
+    "topic": "Cloud Computing with AWS",
+    "target_audience": "Solutions architects and developers",
+    "num_objectives": 6,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
+    "description": "Covers EC2, S3, Lambda, VPC, IAM, and designing scalable cloud architectures"
+  },
+  {
+    "id": "cybersecurity_it_professionals",
+    "topic": "Cybersecurity Fundamentals",
+    "target_audience": "IT professionals and developers",
+    "num_objectives": 5,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate"],
+    "description": "Teaches encryption, authentication, network security, common vulnerabilities, and secure coding"
+  },
+  {
+    "id": "data_structures_cs_students",
+    "topic": "Data Structures and Algorithms",
+    "target_audience": "Computer science students",
+    "num_objectives": 6,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
+    "description": "Covers arrays, linked lists, trees, graphs, sorting algorithms, and complexity analysis"
+  },
+  {
+    "id": "nlp_transformers_ai_engineers",
+    "topic": "Natural Language Processing with Transformers",
+    "target_audience": "AI/ML engineers",
+    "num_objectives": 6,
+    "expected_levels": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"],
+    "description": "Focuses on attention mechanisms, BERT, GPT, fine-tuning, and prompt engineering"
   }
 ]

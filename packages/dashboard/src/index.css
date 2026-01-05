@@ -1,0 +1,113 @@
+/**
+ * Global Styles
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Ant Design overrides */
+.ant-layout {
+  min-height: 100vh;
+}
+
+.ant-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.ant-btn-primary {
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.ant-btn-primary:hover {
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Responsive utilities */
+@media (max-width: 576px) {
+  .ant-layout-content {
+    margin: 12px !important;
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ant-card-body {
+    padding: 16px;
+  }
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Loading skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

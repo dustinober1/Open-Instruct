@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd packages/dashboard && npm install && npm run build",
+  "outputDirectory": "packages/dashboard/dist",
+  "installCommand": "cd packages/dashboard && npm install",
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": "@api_url"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://api.yourdomain.com/$1"
+    }
+  ]
+}

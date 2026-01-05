@@ -33,6 +33,14 @@ class LearningObjective(BaseModel):
     content: str = Field(..., description="The learning objective content")
     level: BloomLevel = Field(..., description="Bloom's cognitive level")
 
+    @field_validator("verb", "content")
+    @classmethod
+    def validate_non_empty(cls, v: str, info) -> str:
+        """Ensure verb and content are not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Field cannot be empty or whitespace")
+        return v
+
 
 class CourseStructure(BaseModel):
     """Structured course with topic and learning objectives."""
@@ -43,6 +51,14 @@ class CourseStructure(BaseModel):
         description="List of learning objectives following Bloom's progression",
         min_length=1,
     )
+
+    @field_validator("topic")
+    @classmethod
+    def validate_topic_non_empty(cls, v: str) -> str:
+        """Ensure topic is not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Topic cannot be empty or whitespace")
+        return v
 
 
 class QuizQuestion(BaseModel):
@@ -55,12 +71,25 @@ class QuizQuestion(BaseModel):
     )
     explanation: str = Field(..., description="Explanation of why answer is correct")
 
+    @field_validator("stem", "correct_answer", "explanation")
+    @classmethod
+    def validate_non_empty_text(cls, v: str) -> str:
+        """Ensure text fields are not empty or whitespace."""
+        if not v or not v.strip():
+            raise ValueError("Field cannot be empty or whitespace")
+        return v
+
     @field_validator("distractors")
     @classmethod
     def validate_distractors(cls, v: List[str], info) -> List[str]:
         """Ensure exactly 3 unique distractors that differ from correct answer."""
         if len(v) != 3:
             raise ValueError("Exactly 3 distractors required")
+
+        # Check for empty distractors
+        for d in v:
+            if not d or not d.strip():
+                raise ValueError("Distractors cannot be empty or whitespace")
 
         if len(set(v)) != 3:
             raise ValueError("Distractors must be unique")

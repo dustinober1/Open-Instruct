@@ -1,0 +1,48 @@
+[tool.pytest.ini_options]
+# Pytest configuration via pyproject.toml (alternative to pytest.ini)
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test*"]
+
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=json",
+    "--cov-fail-under=85",
+    "--tb=short"
+]
+
+markers = [
+    "unit: marks tests as unit tests (fast, isolated)",
+    "mocked: marks tests as mocked tests (use mocked LLM responses)",
+    "integration: marks tests as integration tests (slower, requires services)",
+    "slow: marks tests as slow (skip with -m 'not slow')",
+    "golden: marks tests as golden set tests (regression testing)",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/venv/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

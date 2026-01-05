@@ -213,11 +213,8 @@ class Assessor(dspy.Predict):
 
         if errors:
             error_msg = "Quiz question quality validation failed:\n" + "\n".join(errors)
-            # Use DSPy assertion for better error tracking
-            dspy.Assert(
-                False,
-                error_msg,
-            )
+            # Raise ValueError for quality validation failures
+            raise ValueError(error_msg)
 
     def generate_quiz(
         self,

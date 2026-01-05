@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 import dspy
 from src.core.models import BloomLevel, LearningObjective
 from src.modules.assessor import Assessor
-from src.core.config import configure_dspy
+from src.core.dspy_client import configure_dspy
 
 
 def test_assessor_basic():
@@ -24,7 +24,7 @@ def test_assessor_basic():
     print("=" * 80)
 
     # Configure DSPy (assuming Ollama for local testing)
-    configure_dspy(provider="ollama", model="llama2", temperature=0.7)
+    configure_dspy(base_url="http://localhost:11434", model="llama2")
 
     # Create a test learning objective
     objective = LearningObjective(

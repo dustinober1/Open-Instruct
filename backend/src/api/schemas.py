@@ -51,7 +51,7 @@ class GenerateQuizRequest(BaseModel):
     """Request schema for generating quiz questions."""
 
     objective_id: str = Field(
-        ..., pattern=r"^LO-\d+$", description="Learning objective ID (e.g., LO-001)"
+        ..., pattern=r"^LO-\d{3}$", description="Learning objective ID (e.g., LO-001)"
     )
     difficulty: DifficultyLevel = Field(
         default=DifficultyLevel.MEDIUM, description="Quiz difficulty level"
