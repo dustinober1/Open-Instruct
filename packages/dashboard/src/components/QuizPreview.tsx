@@ -58,7 +58,7 @@ const QuizPreview: React.FC<QuizPreviewProps> = ({
 
   if (loading) {
     return (
-      <Card bordered={false} className="quiz-preview">
+      <Card variant="borderless" className="quiz-preview">
         <div style={{ textAlign: 'center', padding: 40 }}>
           <Spin size="large" />
           <Paragraph style={{ marginTop: 16 }}>Generating quiz question...</Paragraph>
@@ -69,7 +69,7 @@ const QuizPreview: React.FC<QuizPreviewProps> = ({
 
   if (!quiz) {
     return (
-      <Card bordered={false} className="quiz-preview">
+      <Card variant="borderless" className="quiz-preview">
         <Result
           icon="🐰"
           title="No Quiz Generated"
@@ -129,7 +129,7 @@ Explanation: ${quiz.explanation}
   };
 
   return (
-    <Card bordered={false} className="quiz-preview">
+    <Card variant="borderless" className="quiz-preview">
       <div className="quiz-header">
         <Space>
           <Title level={5} style={{ margin: 0 }}>

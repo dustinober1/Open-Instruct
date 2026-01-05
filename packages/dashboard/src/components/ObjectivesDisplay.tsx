@@ -213,10 +213,10 @@ const ObjectivesDisplay: React.FC<ObjectivesDisplayProps> = ({
     <>
       {contextHolder}
       <Card
-        className="objectives-display"
-        bordered={false}
-        loading={loading}
-      >
+    className="objectives-display"
+    variant="borderless"
+    loading={loading}
+  >
         <div className="card-header">
           <div>
             <Title level={5} style={{ margin: 0 }}>

@@ -14,12 +14,9 @@ import {
   Typography,
   Divider,
   Alert,
-  Result,
   message,
   Collapse,
   Tag,
-  Tooltip,
-  Spin,
 } from 'antd';
 import {
   SettingOutlined,
@@ -34,10 +31,9 @@ import {
   GlobalOutlined,
   CloudDownloadOutlined,
 } from '@ant-design/icons';
-import { healthCheck } from '../services/api';
+import type { CollapseProps } from 'antd';
 
 const { Title, Paragraph, Text } = Typography;
-const { Panel } = Collapse;
 
 interface Settings {
   apiUrl: string;
@@ -181,6 +177,167 @@ const SettingsPage: React.FC = () => {
     message.info('Reset to default settings');
   };
 
+  const collapseItems: CollapseProps['items'] = [
+    {
+      key: 'api',
+      label: (
+        <Space>
+          <ApiOutlined />
+          <Text strong>API Configuration</Text>
+        </Space>
+      ),
+      children: (
+        <>
+          <Form.Item
+            name="apiUrl"
+            label={
+              <Space>
+                <GlobalOutlined />
+                <span>API Endpoint URL</span>
+              </Space>
+            }
+            rules={[{ required: true, message: 'Please enter the API URL' }]}
+            extra="The base URL of your Open-Instruct API server"
+          >
+            <Input
+              placeholder="http://localhost:8000"
+              prefix={<GlobalOutlined />}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="apiKey"
+            label={
+              <Space>
+                <KeyOutlined />
+                <span>API Key (Optional)</span>
+              </Space>
+            }
+            extra="Your API key for authentication, if required"
+          >
+            <Input.Password
+              placeholder="Enter your API key"
+              prefix={<KeyOutlined />}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<SaveOutlined />}
+                loading={loading}
+              >
+                Save Settings
+              </Button>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={testConnection}
+                loading={testing}
+              >
+                Test Connection
+              </Button>
+              <Button onClick={resetToDefaults}>
+                Reset to Defaults
+              </Button>
+            </Space>
+          </Form.Item>
+
+          {connectionStatus !== 'idle' && (
+            <Alert
+              type={connectionStatus === 'success' ? 'success' : 'error'}
+              message={connectionStatus === 'success' ? 'Connection Successful' : 'Connection Failed'}
+              description={connectionMessage}
+              showIcon
+              icon={connectionStatus === 'success' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+              style={{ marginTop: 16 }}
+            />
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'ollama',
+      label: (
+        <Space>
+          <RobotOutlined />
+          <Text strong>Ollama Configuration</Text>
+          <Tag color="purple">Local LLM</Tag>
+        </Space>
+      ),
+      children: (
+        <>
+          <Form.Item
+            name="useOllama"
+            label="Use Local Ollama"
+            valuePropName="checked"
+            extra="Enable to use a local Ollama instance instead of remote API"
+          >
+            <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+          </Form.Item>
+
+          <Form.Item
+            name="ollamaBaseUrl"
+            label="Ollama Base URL"
+            extra="The URL where your Ollama instance is running"
+          >
+            <Input
+              placeholder="http://localhost:11434"
+              prefix={<GlobalOutlined />}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="ollamaModel"
+            label="Model Name"
+            extra="The Ollama model to use (e.g., llama2:7b, codellama:7b, mistral)"
+          >
+            <Input
+              placeholder="llama2:7b"
+              prefix={<RobotOutlined />}
+            />
+          </Form.Item>
+
+          <Space direction="vertical" style={{ width: '100%' }} size="small">
+            <Button
+              type="primary"
+              icon={<CloudDownloadOutlined />}
+              onClick={pullModel}
+              loading={pullingModel}
+              block
+            >
+              Pull/Download Model
+            </Button>
+            
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={listModels}
+              block
+            >
+              List Installed Models
+            </Button>
+          </Space>
+
+          <Alert
+            message="Ollama Required"
+            description={
+              <div>
+                <p>Make sure Ollama is running locally with <code>ollama serve</code>.</p>
+                <p>Popular models: <code>llama2:7b</code>, <code>codellama:7b</code>, <code>mistral</code>, <code>orca-2</code></p>
+                <p>To download a model manually: <code>ollama pull llama2:7b</code></p>
+              </div>
+            }
+            type="info"
+            showIcon
+            icon={<InfoCircleOutlined />}
+            style={{ marginTop: 16 }}
+          />
+        </>
+      ),
+    },
+  ];
+
   return (
     <div className="settings-page">
       <Title level={3}>
@@ -199,178 +356,12 @@ const SettingsPage: React.FC = () => {
         onFinish={saveSettings}
         initialValues={savedSettings}
       >
-        <Collapse defaultActiveKey={['api']} bordered={false}>
-          {/* API Configuration */}
-          <Panel
-            header={
-              <Space>
-                <ApiOutlined />
-                <Text strong>API Configuration</Text>
-              </Space>
-            }
-            key="api"
-          >
-            <Form.Item
-              name="apiUrl"
-              label={
-                <Space>
-                  <GlobalOutlined />
-                  <span>API Endpoint URL</span>
-                </Space>
-              }
-              rules={[{ required: true, message: 'Please enter the API URL' }]}
-              extra="The base URL of your Open-Instruct API server"
-            >
-              <Input
-                placeholder="http://localhost:8000"
-                prefix={<GlobalOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="apiKey"
-              label={
-                <Space>
-                  <KeyOutlined />
-                  <span>API Key (Optional)</span>
-                </Space>
-              }
-              extra="Your API key for authentication, if required"
-            >
-              <Input.Password
-                placeholder="Enter your API key"
-                prefix={<KeyOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Space>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  icon={<SaveOutlined />}
-                  loading={loading}
-                >
-                  Save Settings
-                </Button>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={testConnection}
-                  loading={testing}
-                >
-                  Test Connection
-                </Button>
-                <Button onClick={resetToDefaults}>
-                  Reset to Defaults
-                </Button>
-              </Space>
-            </Form.Item>
-
-            {/* Connection Status */}
-            {connectionStatus !== 'idle' && (
-              <Alert
-                type={connectionStatus === 'success' ? 'success' : 'error'}
-                message={connectionStatus === 'success' ? 'Connection Successful' : 'Connection Failed'}
-                description={connectionMessage}
-                showIcon
-                icon={connectionStatus === 'success' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                style={{ marginTop: 16 }}
-              />
-            )}
-          </Panel>
-
-          {/* Ollama Configuration */}
-          <Panel
-            header={
-              <Space>
-                <RobotOutlined />
-                <Text strong>Ollama Configuration</Text>
-                <Tag color="purple">Local LLM</Tag>
-              </Space>
-            }
-            key="ollama"
-          >
-            <Form.Item
-              name="useOllama"
-              label="Use Local Ollama"
-              valuePropName="checked"
-              extra="Enable to use a local Ollama instance instead of remote API"
-            >
-              <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
-            </Form.Item>
-
-            <Collapse>
-              <Panel
-                header="Ollama Settings"
-                key="ollama-settings"
-              >
-                <Form.Item
-                  name="ollamaBaseUrl"
-                  label="Ollama Base URL"
-                  extra="The URL where your Ollama instance is running"
-                >
-                  <Input
-                    placeholder="http://localhost:11434"
-                    prefix={<GlobalOutlined />}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="ollamaModel"
-                  label="Model Name"
-                  extra="The Ollama model to use (e.g., llama2:7b, codellama:7b, mistral)"
-                >
-                  <Input
-                    placeholder="llama2:7b"
-                    prefix={<RobotOutlined />}
-                  />
-                </Form.Item>
-
-                {/* Model Management Buttons */}
-                <Space direction="vertical" style={{ width: '100%' }} size="small">
-                  <Button
-                    type="primary"
-                    icon={<CloudDownloadOutlined />}
-                    onClick={pullModel}
-                    loading={pullingModel}
-                    block
-                  >
-                    Pull/Download Model
-                  </Button>
-                  
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={listModels}
-                    block
-                  >
-                    List Installed Models
-                  </Button>
-                </Space>
-
-                <Alert
-                  message="Ollama Required"
-                  description={
-                    <div>
-                      <p>Make sure Ollama is running locally with <code>ollama serve</code>.</p>
-                      <p>Popular models: <code>llama2:7b</code>, <code>codellama:7b</code>, <code>mistral</code>, <code>orca-2</code></p>
-                      <p>To download a model manually: <code>ollama pull llama2:7b</code></p>
-                    </div>
-                  }
-                  type="info"
-                  showIcon
-                  icon={<InfoCircleOutlined />}
-                  style={{ marginTop: 16 }}
-                />
-              </Panel>
-            </Collapse>
-          </Panel>
-        </Collapse>
+        <Collapse defaultActiveKey={['api']} bordered={false} items={collapseItems} />
       </Form>
 
       <Divider />
 
-      {/* Current Configuration Display */}
-      <Card size="small" title="Current Configuration">
+      <Card variant="borderless" title="Current Configuration">
         <Space direction="vertical" style={{ width: '100%' }}>
           <div>
             <Text strong>API URL: </Text>

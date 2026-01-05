@@ -85,7 +85,10 @@ const CourseGeneratorForm: React.FC<CourseGeneratorFormProps> = ({
   const isProgressComplete = progress?.stage === 'complete';
 
   return (
-    <Card className="course-generator-form" bordered={false}>
+    <Card
+    className="course-generator-form"
+    variant="borderless"
+  >
       <Title level={4}>
         <RocketOutlined style={{ marginRight: 8 }} />
         Generate Learning Objectives

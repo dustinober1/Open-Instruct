@@ -64,7 +64,7 @@ const QuizGenerator: React.FC<QuizGeneratorProps> = ({
   };
 
   return (
-    <Card className="quiz-generator" bordered={false}>
+    <Card className="quiz-generator" variant="borderless">
       <Title level={5}>
         <FileTextOutlined style={{ marginRight: 8 }} />
         Generate Quiz Question
