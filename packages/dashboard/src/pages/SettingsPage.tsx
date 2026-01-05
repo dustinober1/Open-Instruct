@@ -19,6 +19,7 @@ import {
   Collapse,
   Tag,
   Tooltip,
+  Spin,
 } from 'antd';
 import {
   SettingOutlined,
@@ -31,6 +32,7 @@ import {
   CloseCircleOutlined,
   InfoCircleOutlined,
   GlobalOutlined,
+  CloudDownloadOutlined,
 } from '@ant-design/icons';
 import { healthCheck } from '../services/api';
 
@@ -57,6 +59,7 @@ const SettingsPage: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [pullingModel, setPullingModel] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [connectionMessage, setConnectionMessage] = useState('');
   const [savedSettings, setSavedSettings] = useState<Settings>(defaultSettings);
@@ -97,15 +100,9 @@ const SettingsPage: React.FC = () => {
     setConnectionStatus('idle');
 
     try {
-      // Temporarily override the API URL for testing
       const values = form.getFieldsValue();
       const testUrl = values.apiUrl || savedSettings.apiUrl;
 
-      // Use the healthCheck function which uses the configured base URL
-      // We need to temporarily set the base URL
-      const originalApiUrl = import.meta.env.VITE_API_URL;
-
-      // For testing, we'll just try to fetch directly
       const response = await fetch(`${testUrl}/health`);
       const data = await response.json();
 
@@ -121,6 +118,61 @@ const SettingsPage: React.FC = () => {
       setConnectionMessage(`Connection failed: ${error instanceof Error ? error.message : 'Network error'}`);
     } finally {
       setTesting(false);
+    }
+  };
+
+  // Pull/download Ollama model
+  const pullModel = async () => {
+    const values = form.getFieldsValue();
+    const ollamaUrl = values.ollamaBaseUrl || savedSettings.ollamaBaseUrl;
+    const modelName = values.ollamaModel || savedSettings.ollamaModel;
+
+    if (!modelName) {
+      message.error('Please enter a model name');
+      return;
+    }
+
+    setPullingModel(true);
+    message.loading(`Pulling model ${modelName}... This may take a while.`, 0);
+
+    try {
+      const response = await fetch(`${ollamaUrl}/api/pull`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: modelName }),
+      });
+
+      if (response.ok) {
+        message.success(`Model ${modelName} pulled successfully!`);
+      } else {
+        const errorData = await response.json();
+        message.error(`Failed to pull model: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      message.error(`Connection failed: ${error instanceof Error ? error.message : 'Network error'}`);
+    } finally {
+      setPullingModel(false);
+      message.destroy();
+    }
+  };
+
+  // Check which models are installed
+  const listModels = async () => {
+    const values = form.getFieldsValue();
+    const ollamaUrl = values.ollamaBaseUrl || savedSettings.ollamaBaseUrl;
+
+    try {
+      const response = await fetch(`${ollamaUrl}/api/tags`);
+      const data = await response.json();
+      
+      if (data.models) {
+        const modelNames = data.models.map((m: { name: string }) => m.name).join(', ');
+        message.info(`Installed models: ${modelNames || 'None'}`);
+      }
+    } catch (error) {
+      message.error(`Failed to list models: ${error instanceof Error ? error.message : 'Network error'}`);
     }
   };
 
@@ -266,7 +318,7 @@ const SettingsPage: React.FC = () => {
                 <Form.Item
                   name="ollamaModel"
                   label="Model Name"
-                  extra="The Ollama model to use (e.g., llama2:7b, codellama:7b)"
+                  extra="The Ollama model to use (e.g., llama2:7b, codellama:7b, mistral)"
                 >
                   <Input
                     placeholder="llama2:7b"
@@ -274,12 +326,40 @@ const SettingsPage: React.FC = () => {
                   />
                 </Form.Item>
 
+                {/* Model Management Buttons */}
+                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                  <Button
+                    type="primary"
+                    icon={<CloudDownloadOutlined />}
+                    onClick={pullModel}
+                    loading={pullingModel}
+                    block
+                  >
+                    Pull/Download Model
+                  </Button>
+                  
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={listModels}
+                    block
+                  >
+                    List Installed Models
+                  </Button>
+                </Space>
+
                 <Alert
                   message="Ollama Required"
-                  description="Make sure Ollama is running locally with `ollama serve`. Download models with `ollama pull llama2:7b`."
+                  description={
+                    <div>
+                      <p>Make sure Ollama is running locally with <code>ollama serve</code>.</p>
+                      <p>Popular models: <code>llama2:7b</code>, <code>codellama:7b</code>, <code>mistral</code>, <code>orca-2</code></p>
+                      <p>To download a model manually: <code>ollama pull llama2:7b</code></p>
+                    </div>
+                  }
                   type="info"
                   showIcon
                   icon={<InfoCircleOutlined />}
+                  style={{ marginTop: 16 }}
                 />
               </Panel>
             </Collapse>
