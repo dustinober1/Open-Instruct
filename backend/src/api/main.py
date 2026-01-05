@@ -6,6 +6,7 @@ and quiz questions using DSPy modules and Ollama LLM integration.
 """
 
 import json
+import logging
 import time
 import uuid
 from datetime import datetime
@@ -16,6 +17,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
 
 class CustomJSONEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles datetime objects."""
@@ -25,18 +34,22 @@ class CustomJSONEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+from src.api.objective_store import get_objective_store
 from src.api.schemas import (
     CourseStructureResponse,
     ErrorDetail,
     ErrorResponse,
     GenerateObjectivesRequest,
+    GenerateQuizRequest,
     HealthResponse,
     LearningObjectiveResponse,
     MetaResponse,
+    QuizQuestionResponse,
     SuccessResponse,
 )
 from src.core.dspy_client import configure_dspy, get_model_info, test_ollama_connection
 from src.core.models import CourseStructure, LearningObjective
+from src.modules.assessor import Assessor
 from src.modules.architect import Architect
 
 # Initialize FastAPI app
@@ -135,11 +148,22 @@ async def generate_objectives(request: Request, body: GenerateObjectivesRequest)
     request_id = get_request_id()
     start_time = time.time()
 
+    logger.info(
+        f"[{request_id}] Generating objectives",
+        extra={
+            "request_id": request_id,
+            "topic": body.topic,
+            "target_audience": body.target_audience,
+            "num_objectives": body.num_objectives
+        }
+    )
+
     try:
         # Configure DSPy if not already configured
         try:
             configure_dspy()
         except Exception as e:
+            logger.error(f"[{request_id}] Failed to configure DSPy: {e}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail={
@@ -159,13 +183,28 @@ async def generate_objectives(request: Request, body: GenerateObjectivesRequest)
                 target_audience=body.target_audience,
                 num_objectives=body.num_objectives,
             )
+
+            # Store objectives in the objective store for quiz generation later
+            objective_store = get_objective_store()
+            objective_store.add_objectives(course_structure.objectives)
+
+            logger.info(
+                f"[{request_id}] Successfully generated {len(course_structure.objectives)} objectives",
+                extra={"request_id": request_id, "objective_count": len(course_structure.objectives)}
+            )
+
         except ValueError as e:
+            logger.error(f"[{request_id}] Objective generation failed: {e}")
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "code": "GENERATION_FAILED",
                     "message": str(e),
-                    "details": {"topic": body.topic, "target_audience": body.target_audience},
+                    "details": {
+                        "topic": body.topic,
+                        "target_audience": body.target_audience,
+                        "suggestion": "Try rephrasing your topic or target audience with more specific details"
+                    },
                 },
             )
 
@@ -204,24 +243,220 @@ async def generate_objectives(request: Request, body: GenerateObjectivesRequest)
         raise
 
     except ValidationError as e:
+        logger.error(f"[{request_id}] Validation error: {e}")
         # Pydantic validation error
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "code": "VALIDATION_ERROR",
                 "message": "Invalid request data",
-                "details": {"errors": e.errors()},
+                "details": {
+                    "errors": e.errors(),
+                    "suggestion": "Check that all required fields are present and correctly formatted"
+                },
             },
         )
 
     except Exception as e:
+        logger.error(f"[{request_id}] Unexpected error: {e}", exc_info=True)
         # Unexpected error
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "code": "INTERNAL_ERROR",
                 "message": "An unexpected error occurred",
-                "details": {"error": str(e)},
+                "details": {
+                    "error": str(e),
+                    "suggestion": "Please try again. If the problem persists, contact support with the request ID"
+                },
+            },
+        )
+
+
+@app.post(
+    "/api/v1/generate/quiz",
+    response_model=SuccessResponse,
+    tags=["Quizzes"],
+)
+async def generate_quiz(request: Request, body: GenerateQuizRequest):
+    """
+    Generate a quiz question for a learning objective.
+
+    Args:
+        body: Request containing objective_id and difficulty level
+
+    Returns:
+        Generated quiz question with stem, correct answer, distractors, and explanation
+
+    Raises:
+        HTTPException: If generation fails or objective not found
+    """
+    request_id = get_request_id()
+    start_time = time.time()
+
+    logger.info(
+        f"[{request_id}] Generating quiz",
+        extra={
+            "request_id": request_id,
+            "objective_id": body.objective_id,
+            "difficulty": body.difficulty.value
+        }
+    )
+
+    try:
+        # Retrieve objective from store
+        objective_store = get_objective_store()
+        objective = objective_store.get_objective(body.objective_id)
+
+        if not objective:
+            logger.warning(
+                f"[{request_id}] Objective not found: {body.objective_id}",
+                extra={"request_id": request_id, "objective_id": body.objective_id}
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "OBJECTIVE_NOT_FOUND",
+                    "message": f"Learning objective '{body.objective_id}' not found",
+                    "details": {
+                        "objective_id": body.objective_id,
+                        "suggestion": "First generate learning objectives using /api/v1/generate/objectives endpoint"
+                    },
+                },
+            )
+
+        # Configure DSPy if not already configured
+        try:
+            configure_dspy()
+        except Exception as e:
+            logger.error(f"[{request_id}] Failed to configure DSPy: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "Failed to configure LLM connection",
+                    "details": {
+                        "error": str(e),
+                        "suggestion": "Check that Ollama is running and accessible"
+                    },
+                },
+            )
+
+        # Initialize Assessor module
+        assessor = Assessor()
+
+        # Generate quiz with timeout handling
+        import concurrent.futures
+
+        try:
+            # Use ThreadPoolExecutor to enforce timeout
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    assessor.generate_quiz,
+                    objective=objective,
+                    context=None,  # Could be extended to include course context
+                )
+
+                try:
+                    # Wait for completion with 30 second timeout
+                    quiz_question = future.result(timeout=30)
+
+                except concurrent.futures.TimeoutError:
+                    # Cancel the future if it's still running
+                    future.cancel()
+                    raise TimeoutError("Quiz generation exceeded 30 second timeout")
+
+        except TimeoutError as e:
+            logger.error(f"[{request_id}] Quiz generation timeout: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail={
+                    "code": "GENERATION_TIMEOUT",
+                    "message": "Quiz generation exceeded 30 second timeout",
+                    "details": {
+                        "objective_id": body.objective_id,
+                        "timeout_seconds": 30,
+                        "suggestion": "The LLM took too long to respond. Try again or consider using a faster model"
+                    },
+                },
+            )
+        except ValueError as e:
+            logger.error(f"[{request_id}] Quiz generation failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "code": "GENERATION_FAILED",
+                    "message": str(e),
+                    "details": {
+                        "objective_id": body.objective_id,
+                        "objective_text": f"{objective.verb} {objective.content}",
+                        "suggestion": "Try generating a quiz for a different objective, or rephrase the objective"
+                    },
+                },
+            )
+
+        logger.info(
+            f"[{request_id}] Successfully generated quiz",
+            extra={
+                "request_id": request_id,
+                "quiz_stem_length": len(quiz_question.stem),
+                "distractor_count": len(quiz_question.distractors)
+            }
+        )
+
+        # Convert to response format
+        quiz_response = QuizQuestionResponse(
+            quiz_id=f"quiz_{uuid.uuid4().hex[:12]}",
+            objective_id=body.objective_id,
+            stem=quiz_question.stem,
+            correct_answer=quiz_question.correct_answer,
+            distractors=quiz_question.distractors,
+            explanation=quiz_question.explanation,
+            difficulty=body.difficulty.value,
+            generated_at=datetime.utcnow(),
+        )
+
+        # Create success response
+        success_response = SuccessResponse(
+            success=True,
+            data=quiz_response.model_dump(),
+            meta=create_meta_response(request_id, start_time),
+        )
+
+        # Convert datetime objects to ISO format strings
+        return json.loads(json.dumps(success_response.model_dump(), cls=CustomJSONEncoder))
+
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+
+    except ValidationError as e:
+        logger.error(f"[{request_id}] Validation error: {e}")
+        # Pydantic validation error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "VALIDATION_ERROR",
+                "message": "Invalid request data",
+                "details": {
+                    "errors": e.errors(),
+                    "suggestion": "Check that objective_id format is LO-XXX (e.g., LO-001)"
+                },
+            },
+        )
+
+    except Exception as e:
+        logger.error(f"[{request_id}] Unexpected error: {e}", exc_info=True)
+        # Unexpected error
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred",
+                "details": {
+                    "error": str(e),
+                    "suggestion": "Please try again. If the problem persists, contact support with the request ID"
+                },
             },
         )
 
