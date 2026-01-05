@@ -21,6 +21,7 @@ from typing import Optional
 import dspy
 from pydantic import ValidationError
 
+from src.core.error_handlers import retry_with_exponential_backoff
 from src.core.models import LearningObjective, QuizQuestion
 
 
@@ -71,6 +72,48 @@ class Assessor(dspy.Predict):
         """
         super().__init__(signature=GenerateQuiz, **kwargs)
 
+    def _generate_once(
+        self,
+        objective_str: str,
+        context: Optional[str] = None,
+    ) -> dspy.Prediction:
+        """Single generation attempt without retry logic.
+
+        This method performs one attempt at generating a quiz question:
+        1. Calls the LLM to generate a quiz question
+        2. Validates output against QuizQuestion model
+        3. Runs DSPy assertions for quality validation
+
+        Args:
+            objective_str: Formatted objective string (e.g., "explain machine learning")
+            context: Optional context about the course topic
+
+        Returns:
+            dspy.Prediction with quiz_question field containing valid QuizQuestion
+
+        Raises:
+            ValueError: If generation or validation fails
+            ValidationError: If output doesn't match QuizQuestion model
+        """
+        # Generate prediction using DSPy
+        prediction = super().forward(
+            objective=objective_str,
+            context=context,
+        )
+
+        # Extract quiz question from prediction
+        quiz_question = prediction.quiz_question
+
+        # If it's a dict, try to parse to QuizQuestion
+        if isinstance(quiz_question, dict):
+            quiz_question = QuizQuestion(**quiz_question)
+            prediction.quiz_question = quiz_question
+
+        # Validate question quality
+        self._validate_question_quality(quiz_question)
+
+        return prediction
+
     def forward(
         self,
         objective: LearningObjective,
@@ -80,10 +123,11 @@ class Assessor(dspy.Predict):
 
         This method implements the core logic for generating quiz questions:
         1. Formats the objective as a string
-        2. Calls the LLM to generate a quiz question
+        2. Calls the LLM to generate a quiz question (with retry via decorator)
         3. Validates output against QuizQuestion model
         4. Runs DSPy assertions for quality validation
-        5. Retries up to 3 times if JSON parsing fails
+
+        Uses centralized retry logic with exponential backoff.
 
         Args:
             objective: LearningObjective to base the quiz on
@@ -94,60 +138,15 @@ class Assessor(dspy.Predict):
 
         Raises:
             ValueError: If generation fails after max retries
+            ValidationError: If output doesn't match QuizQuestion model
         """
-        max_retries = 3
-        last_error = None
-
         # Format objective as string
         objective_str = f"{objective.verb} {objective.content}"
 
-        for attempt in range(max_retries):
-            try:
-                # Generate prediction using DSPy
-                prediction = super().forward(
-                    objective=objective_str,
-                    context=context,
-                )
-
-                # Extract quiz question from prediction
-                quiz_question = prediction.quiz_question
-
-                # If it's a dict, try to parse to QuizQuestion
-                if isinstance(quiz_question, dict):
-                    quiz_question = QuizQuestion(**quiz_question)
-                    prediction.quiz_question = quiz_question
-
-                # Validate question quality
-                self._validate_question_quality(quiz_question)
-
-                return prediction
-
-            except ValidationError as e:
-                last_error = e
-                if attempt < max_retries - 1:
-                    # Retry with stronger constraint message
-                    continue
-                else:
-                    raise ValueError(
-                        f"Failed to generate valid QuizQuestion after {max_retries} attempts: {e}"
-                    )
-
-            except (ValueError, json.JSONDecodeError) as e:
-                last_error = e
-                if attempt < max_retries - 1:
-                    # Retry with stronger constraint
-                    continue
-                else:
-                    raise ValueError(
-                        f"Failed to parse or validate output after {max_retries} attempts: {e}"
-                    )
-
-            except Exception as e:
-                # Unexpected error - don't retry
-                raise ValueError(f"Unexpected error during generation: {e}")
-
-        # Should never reach here, but just in case
-        raise ValueError(f"Generation failed: {last_error}")
+        return self._generate_once(
+            objective_str=objective_str,
+            context=context,
+        )
 
     def _validate_question_quality(self, question: QuizQuestion) -> None:
         """Validate quiz question quality standards.

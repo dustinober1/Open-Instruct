@@ -19,6 +19,7 @@ from typing import Optional
 import dspy
 from pydantic import ValidationError
 
+from src.core.error_handlers import retry_with_exponential_backoff
 from src.core.models import BloomsTaxonomy, CourseStructure, LearningObjective
 
 
@@ -67,6 +68,58 @@ class Architect(dspy.Predict):
         """
         super().__init__(signature=GenerateObjectives, **kwargs)
 
+    def _generate_once(
+        self,
+        topic: str,
+        target_audience: str,
+        num_objectives: int = 6,
+    ) -> dspy.Prediction:
+        """Single generation attempt without retry logic.
+
+        This method performs one attempt at generating learning objectives:
+        1. Calls the LLM to generate objectives
+        2. Validates output against CourseStructure model
+        3. Runs DSPy assertions for Bloom's verb validation
+
+        Args:
+            topic: Course topic or title
+            target_audience: Target audience description
+            num_objectives: Number of objectives to generate (default: 6)
+
+        Returns:
+            dspy.Prediction with course_structure field containing valid CourseStructure
+
+        Raises:
+            ValueError: If generation or validation fails
+            ValidationError: If output doesn't match CourseStructure model
+        """
+        # Generate prediction using DSPy
+        prediction = super().forward(
+            topic=topic,
+            target_audience=target_audience,
+            num_objectives=num_objectives,
+        )
+
+        # Extract course structure from prediction
+        course_structure = prediction.course_structure
+
+        # If it's a dict, try to parse to CourseStructure
+        if isinstance(course_structure, dict):
+            course_structure = CourseStructure(**course_structure)
+            prediction.course_structure = course_structure
+
+        # Validate all objectives use approved Bloom's verbs
+        self._validate_blooms_verbs(course_structure)
+
+        # Validate objective count matches request
+        if len(course_structure.objectives) != num_objectives:
+            raise ValueError(
+                f"Expected {num_objectives} objectives, "
+                f"got {len(course_structure.objectives)}"
+            )
+
+        return prediction
+
     def forward(
         self,
         topic: str,
@@ -76,10 +129,11 @@ class Architect(dspy.Predict):
         """Generate learning objectives with validation and retries.
 
         This method implements the core logic for generating learning objectives:
-        1. Calls the LLM to generate objectives
+        1. Calls the LLM to generate objectives (with retry via decorator)
         2. Validates output against CourseStructure model
         3. Runs DSPy assertions for Bloom's verb validation
-        4. Retries up to 3 times if JSON parsing fails
+
+        Uses centralized retry logic with exponential backoff.
 
         Args:
             topic: Course topic or title
@@ -91,65 +145,13 @@ class Architect(dspy.Predict):
 
         Raises:
             ValueError: If generation fails after max retries
+            ValidationError: If output doesn't match CourseStructure model
         """
-        max_retries = 3
-        last_error = None
-
-        for attempt in range(max_retries):
-            try:
-                # Generate prediction using DSPy
-                prediction = super().forward(
-                    topic=topic,
-                    target_audience=target_audience,
-                    num_objectives=num_objectives,
-                )
-
-                # Extract course structure from prediction
-                course_structure = prediction.course_structure
-
-                # If it's a dict, try to parse to CourseStructure
-                if isinstance(course_structure, dict):
-                    course_structure = CourseStructure(**course_structure)
-                    prediction.course_structure = course_structure
-
-                # Validate all objectives use approved Bloom's verbs
-                self._validate_blooms_verbs(course_structure)
-
-                # Validate objective count matches request
-                if len(course_structure.objectives) != num_objectives:
-                    raise ValueError(
-                        f"Expected {num_objectives} objectives, "
-                        f"got {len(course_structure.objectives)}"
-                    )
-
-                return prediction
-
-            except ValidationError as e:
-                last_error = e
-                if attempt < max_retries - 1:
-                    # Retry with stronger constraint message
-                    continue
-                else:
-                    raise ValueError(
-                        f"Failed to generate valid CourseStructure after {max_retries} attempts: {e}"
-                    )
-
-            except (ValueError, json.JSONDecodeError) as e:
-                last_error = e
-                if attempt < max_retries - 1:
-                    # Retry with stronger constraint
-                    continue
-                else:
-                    raise ValueError(
-                        f"Failed to parse or validate output after {max_retries} attempts: {e}"
-                    )
-
-            except Exception as e:
-                # Unexpected error - don't retry
-                raise ValueError(f"Unexpected error during generation: {e}")
-
-        # Should never reach here, but just in case
-        raise ValueError(f"Generation failed: {last_error}")
+        return self._generate_once(
+            topic=topic,
+            target_audience=target_audience,
+            num_objectives=num_objectives,
+        )
 
     def _validate_blooms_verbs(self, course_structure: CourseStructure) -> None:
         """Validate that all objectives use approved Bloom's verbs.
@@ -178,11 +180,8 @@ class Architect(dspy.Predict):
 
         if errors:
             error_msg = "Bloom's verb validation failed:\n" + "\n".join(errors)
-            # Use DSPy assertion for better error tracking
-            dspy.Assert(
-                False,
-                error_msg,
-            )
+            # Raise assertion error for validation failures
+            raise AssertionError(error_msg)
 
     def generate_objectives(
         self,
