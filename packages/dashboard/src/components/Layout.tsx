@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Layout as AntLayout,
   Menu,
@@ -40,36 +41,48 @@ interface MainLayoutProps {
 type MenuKey = 'dashboard' | 'courses' | 'quiz' | 'analytics' | 'settings';
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children, healthStatus }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerVisible, setMobileDrawerVisible] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState<MenuKey>('dashboard');
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
+  // Get current path to set selected menu item
+  const getCurrentKey = (): MenuKey => {
+    const path = location.pathname;
+    if (path === '/' || path === '/dashboard') return 'dashboard';
+    if (path === '/courses') return 'courses';
+    if (path === '/quiz') return 'quiz';
+    if (path === '/analytics') return 'analytics';
+    if (path === '/settings') return 'settings';
+    return 'dashboard';
+  };
+
   const menuItems = [
     {
-      key: 'dashboard',
+      key: '/dashboard',
       icon: <DashboardOutlined />,
       label: 'Dashboard',
     },
     {
-      key: 'courses',
+      key: '/courses',
       icon: <BookOutlined />,
       label: 'Courses',
     },
     {
-      key: 'quiz',
+      key: '/quiz',
       icon: <QuestionCircleOutlined />,
       label: 'Quiz Generator',
     },
     {
-      key: 'analytics',
+      key: '/analytics',
       icon: <BarChartOutlined />,
       label: 'Analytics',
     },
     {
-      key: 'settings',
+      key: '/settings',
       icon: <SettingOutlined />,
       label: 'Settings',
     },
@@ -116,16 +129,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, healthStatus }) => {
     }
   };
 
+  const handleMenuClick = (key: string) => {
+    navigate(key);
+    setMobileDrawerVisible(false);
+  };
+
   const SiderMenu = () => (
     <Menu
       theme="dark"
       mode="inline"
-      selectedKeys={[selectedMenu]}
+      selectedKeys={[location.pathname]}
       items={menuItems}
-      onClick={({ key }) => {
-        setSelectedMenu(key as MenuKey);
-        setMobileDrawerVisible(false);
-      }}
+      onClick={({ key }) => handleMenuClick(key)}
       style={{ borderRight: 0 }}
     />
   );
@@ -194,8 +209,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, healthStatus }) => {
               icon={<MenuOutlined />}
               onClick={() => setMobileDrawerVisible(true)}
             />
-            <Title level={4} style={{ margin: 0, display: 'none', '@media (min-width: 992px)': { display: 'block' } }} className="header-title">
-              {menuItems.find((item) => item.key === selectedMenu)?.label}
+            <Title level={4} style={{ margin: 0 }} className="header-title">
+              {menuItems.find((item) => item.key === location.pathname)?.label || 'Dashboard'}
             </Title>
           </Space>
 
@@ -269,9 +284,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, healthStatus }) => {
           }
           .ant-layout {
             margin-left: 0 !important;
-          }
-          .header-title {
-            display: block !important;
           }
         }
       `}</style>
